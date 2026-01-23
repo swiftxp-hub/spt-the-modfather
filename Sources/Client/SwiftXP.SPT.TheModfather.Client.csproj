@@ -6,7 +6,7 @@
 
     <AssemblyName>SwiftXP.SPT.TheModfather.Client</AssemblyName>
     <Product>The Modfather</Product>
-    <Version>1.0.0</Version>
+    <Version>0.1.0</Version>
     <RestoreAdditionalProjectSources>
       https://api.nuget.org/v3/index.json;
       https://nuget.bepinex.dev/v3/index.json
