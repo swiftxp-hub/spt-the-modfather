@@ -3,24 +3,23 @@ using System.IO;
 using System.Linq;
 using SPTarkov.DI.Annotations;
 using SwiftXP.SPT.Common.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
+using SwiftXP.SPT.TheModfather.Server.Configurations.Models;
 using SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 
 namespace SwiftXP.SPT.TheModfather.Server.Services;
 
 [Injectable(InjectionType.Scoped)]
-public class ServerFileInfoService(IBaseDirectoryService baseDirectoryService) : IServerFileInfoService
+public class ServerFileInfoService(
+    IServerConfigurationLoader serverConfigurationLoader,
+    IBaseDirectoryService baseDirectoryService) : IServerFileInfoService
 {
-    private static readonly string[] AllowedPaths =
-    [
-        "BepInEx/patchers",
-        "BepInEx/plugins"
-    ];
-
     public FileInfo? Get(string relativeFilePath)
     {
         if (string.IsNullOrWhiteSpace(relativeFilePath))
             return null;
 
+        ServerConfiguration serverConfiguration = serverConfigurationLoader.LoadOrCreate();
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
         string requestedFullPath;
         
@@ -33,7 +32,7 @@ public class ServerFileInfoService(IBaseDirectoryService baseDirectoryService) :
             return null;
         }
 
-        bool isAccessAllowed = AllowedPaths.Any(allowedSubPath => 
+        bool isAccessAllowed = serverConfiguration.SyncedPaths.Any(allowedSubPath => 
         {
             string allowedAbsolutePath = Path.GetFullPath(Path.Combine(baseDir, allowedSubPath));
             

@@ -7,6 +7,8 @@ using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Utils;
+using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
+using SwiftXP.SPT.TheModfather.Server.Configurations.Models;
 using SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 
 namespace SwiftXP.SPT.TheModfather;
@@ -14,15 +16,18 @@ namespace SwiftXP.SPT.TheModfather;
 [Injectable(InjectionType = InjectionType.Singleton, TypePriority = OnLoadOrder.PreSptModLoader)]
 public class ModHttpListener(
     ISptLogger<ModHttpListener> logger,
+    IServerConfigurationLoader serverConfigurationLoader,
     IServerFileInfoService serverFileInfoService,
     IServerFilesHashingService serverFilesHashingService)
     : IModHttpListener
 {
     private const string RoutePrefix = "/theModfather";
-    
+
     private const string RouteGetHashes = "/getFileHashes";
     
     private const string RouteGetFile = "/getFile";
+
+    private const string RouteGetServerConfiguration = "/getServerConfiguration";
 
     public bool CanHandle(MongoId sessionId, HttpContext context)
     {
@@ -42,6 +47,10 @@ public class ModHttpListener(
             else if (requestPath.StartsWith($"{RoutePrefix}{RouteGetFile}", StringComparison.OrdinalIgnoreCase))
             {
                 await HandleGetFileAsync(context);
+            }
+            else if (IsRoute(requestPath, RouteGetServerConfiguration))
+            {
+                await HandleGetServerConfigurationAsync(context);
             }
             else
             {
@@ -72,7 +81,7 @@ public class ModHttpListener(
         if (string.IsNullOrWhiteSpace(requestedFilePath) || requestedFilePath.Contains(".."))
         {
             logger.Warning($"[The Modfather] Blocked suspicious path request: {requestedFilePath}");
-            context.Response.StatusCode = 400; // Bad Request
+            context.Response.StatusCode = 400;
 
             return;
         }
@@ -95,10 +104,20 @@ public class ModHttpListener(
         }
     }
 
-    private static async Task HandleUnknownRouteAsync(HttpContext context, string requestPath)
+#pragma warning disable CS1998 // This async method lacks 'await' operators.
+    private async Task HandleUnknownRouteAsync(HttpContext context, string requestPath)
+#pragma warning restore CS1998 // This async method lacks 'await' operators.
     {
+        logger.Warning($"[The Modfather] Unknown route: {requestPath}");
+
         context.Response.StatusCode = 404;
-        await context.Response.WriteAsync($"[The Modfather] Unknown route '{requestPath}'", context.RequestAborted);
+    }
+
+    private async Task HandleGetServerConfigurationAsync(HttpContext context)
+    {
+        ServerConfiguration result = serverConfigurationLoader.LoadOrCreate();
+
+        await context.Response.WriteAsJsonAsync(result, context.RequestAborted);
     }
 
     private static bool IsRoute(string path, string subRoute)

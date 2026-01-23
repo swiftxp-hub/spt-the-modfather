@@ -8,6 +8,7 @@
         Title="The Modfather - SPT Mod-Sync"
         Width="500" Height="250"
         WindowStartupLocation="CenterScreen"
+        Topmost="True"
         SystemDecorations="BorderOnly"
         Background="#333333"
         CanResize="False">

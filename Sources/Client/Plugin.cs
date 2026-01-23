@@ -8,6 +8,7 @@ using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Patches;
 using SwiftXP.SPT.TheModfather.Client.Services;
 using SwiftXP.SPT.TheModfather.Client.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Configurations;
 
 namespace SwiftXP.SPT.TheModfather.Client;
 
@@ -26,6 +27,8 @@ public class Plugin : BaseUnityPlugin
     private void Awake()
     {
         Instance = this;
+
+        Configuration = new PluginConfiguration(Config);
 
         MenuScreenShowPatch = new MenuScreenShowPatch();
         MenuScreenShowPatch.Enable();
@@ -47,6 +50,8 @@ public class Plugin : BaseUnityPlugin
     }
 
     public static Plugin? Instance { get; private set; }
+    
+    public static PluginConfiguration? Configuration;
 
     public static IModSyncService? ModSyncService { get; private set; }
 
