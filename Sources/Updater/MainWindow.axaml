@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="300"
+        x:Class="SwiftXP.SPT.TheModfather.Updater.MainWindow"
+        
+        Title="The Modfather - SPT Mod-Sync"
+        Width="500" Height="250"
+        WindowStartupLocation="CenterScreen"
+        SystemDecorations="BorderOnly"
+        Background="#333333"
+        CanResize="False">
+
+    <Grid>
+        <StackPanel VerticalAlignment="Center" 
+                    HorizontalAlignment="Center" 
+                    Spacing="20">
+            
+            <TextBlock Text="The Modfather"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="White"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"/>
+
+            <TextBlock x:Name="StatusText"
+                       Text="Please wait. Finishing update process..."
+                       FontSize="14"
+                       Foreground="#D3D3D3"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center"
+                       FontStyle="Italic"/>
+
+            <ProgressBar x:Name="UpdateProgressBar"
+                         Width="350" 
+                         Height="10"
+                         Value="0"
+                         Minimum="0" 
+                         Maximum="100"
+                         Foreground="#007ACC"
+                         Background="#505050"
+                         IsIndeterminate="True"/>
+            </StackPanel>
+    </Grid>
+</Window>
