@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using BepInEx;
+using BepInEx.Bootstrap;
 using SPT.Reflection.Patching;
 using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
@@ -48,6 +49,9 @@ public class Plugin : BaseUnityPlugin
         StartCoroutine(ModSyncService.SyncMods((result) =>
         {
             ModSyncActions = result;
+
+            if(Chainloader.PluginInfos.ContainsKey("com.fika.headless") && ModSyncActions.Count > 0)
+                StartCoroutine(ModSyncService.UpdateModsCoroutine(ModSyncActions));
         }));
     }
 

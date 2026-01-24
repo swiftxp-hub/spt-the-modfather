@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 
 namespace SwiftXP.SPT.TheModfather.Updater.Services;
 
-public static class FinishUpdateService
+public class FinishUpdateService
 {   
-    public static async Task<bool> FinishAsync()
+    private const string DeleteExtension = ".delete";
+
+    public async Task<bool> FinishAsync()
     {
         SimpleLogService.Write("Starting finalization of update(s)...");
 
@@ -29,6 +31,9 @@ public static class FinishUpdateService
 
             if(Directory.Exists(modfatherDataPayloadDirectory))
             {
+                // Delete instructions first...
+                ExecuteDeletionInstructions(modfatherDataPayloadDirectory, baseDirectory);
+
                 string[] filePaths = Directory.GetFiles(modfatherDataPayloadDirectory, "*", SearchOption.AllDirectories);
                 
                 SimpleLogService.Write($"Found {filePaths.Length} file(s) to be moved...");
@@ -156,5 +161,33 @@ public static class FinishUpdateService
         }
 
         return null;
+    }
+
+    private void ExecuteDeletionInstructions(string payloadDirectory, string baseDirectory)
+    {
+        if (!Directory.Exists(payloadDirectory))
+            return;
+
+        string[] instructionFiles = Directory.GetFiles(payloadDirectory, "*" + DeleteExtension, SearchOption.AllDirectories);
+
+        foreach (string instructionFile in instructionFiles)
+        {
+            string relativePathWithExt = Path.GetRelativePath(payloadDirectory, instructionFile);
+            
+            if (relativePathWithExt.EndsWith(DeleteExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                string relativePath = relativePathWithExt.Substring(0, relativePathWithExt.Length - DeleteExtension.Length);
+                string targetFile = Path.Combine(baseDirectory, relativePath);
+
+                SimpleLogService.Write($"Deleting file '{targetFile}'...");
+
+                if (File.Exists(targetFile))
+                {
+                    File.Delete(targetFile);
+                }
+
+                File.Delete(instructionFile);
+            }
+        }
     }
 }

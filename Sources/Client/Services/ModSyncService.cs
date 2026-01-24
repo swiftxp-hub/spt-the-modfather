@@ -25,6 +25,7 @@ public class ModSyncService(
     private const string UpdaterExecutableName = "SwiftXP.SPT.TheModfather.Updater.exe";
     private const string DataDirectoryName = "TheModfather_Data";
     private const string PayloadDirectoryName = "Payload";
+    private const string DeleteExtension = ".delete";
 
     private bool _hasShownModUpdaterWindow = false;
 
@@ -101,7 +102,7 @@ public class ModSyncService(
         // Do nothing.
     }
 
-    private IEnumerator UpdateModsCoroutine(Dictionary<string, ModSyncActionEnum> modSyncActions)
+    public IEnumerator UpdateModsCoroutine(Dictionary<string, ModSyncActionEnum> modSyncActions)
     {
         int actionCount = 0;
         int totalActions = modSyncActions.Count;
@@ -157,7 +158,7 @@ public class ModSyncService(
                     }
                     else if (File.Exists(absolutePath))
                     {
-                        File.Delete(absolutePath);
+                        CreateDeleteInstruction(GetPayloadPath(baseDir), modSyncAction.Key);
                     }
                 }
                 catch (Exception ex)
@@ -217,6 +218,25 @@ public class ModSyncService(
         {
             simpleSptLogger.LogException(ex);
         }
+    }
+
+    private void CreateDeleteInstruction(string payloadDirectory, string relativeFilePath)
+    {
+        string normalizedPath = relativeFilePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+        string instructionPath = Path.Combine(payloadDirectory, normalizedPath + DeleteExtension);
+        
+        string? directory = Path.GetDirectoryName(instructionPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        File.WriteAllText(instructionPath, string.Empty);
+    }
+
+    private string GetPayloadPath(string baseDir)
+    {
+        return Path.GetFullPath(Path.Combine(baseDir, DataDirectoryName, PayloadDirectoryName));
     }
 
     private string GetPayloadPath(string baseDir, string relativePath)

@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using SwiftXP.SPT.TheModfather.Updater.Services;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace SwiftXP.SPT.TheModfather.Updater;
@@ -13,6 +14,13 @@ class Program
     [STAThread]
     public static async Task Main(string[] args)
     {
+        if (!File.Exists("EscapeFromTarkov.exe"))
+        {
+            SimpleLogService.Error("EscapeFromTarkov.exe could not be found. Make sure you are running the updater from your SPT folder. Exiting...");
+
+            return;
+        }
+
         SimpleLogService.StartNewFile();
         SimpleLogService.Write("Starting up...");
 
@@ -20,7 +28,9 @@ class Program
         {
             SimpleLogService.Write("Silent finalization of update(s)...");
 
-            await FinishUpdateService.FinishAsync();
+            FinishUpdateService finishUpdateService = new();
+
+            await finishUpdateService.FinishAsync();
         }
         else
         {

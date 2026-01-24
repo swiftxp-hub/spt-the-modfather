@@ -12,11 +12,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/../../../spt-common/**/*.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="$(MSBuildThisFileDirectory)/../../../spt4-shared-dlls/**/*.dll" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../../../spt-common/Services/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../../../spt-common/Extensions/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>

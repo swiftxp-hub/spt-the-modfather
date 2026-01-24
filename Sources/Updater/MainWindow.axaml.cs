@@ -23,7 +23,9 @@ public partial class MainWindow : Window
     {
         bool updateFinished = await Task.Run(async () =>
         {
-            return await FinishUpdateService.FinishAsync();
+            FinishUpdateService finishUpdateService = new();
+
+            return await finishUpdateService.FinishAsync();
         });
 
         string updateStatus = "Update finished.";

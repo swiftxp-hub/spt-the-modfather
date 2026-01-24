@@ -158,7 +158,7 @@ public class ModUpdaterUI : MonoBehaviour
             if (blockerObject != null)
                 return;
 
-            blockerObject = new GameObject("MyModInputBlocker_Canvas");
+            blockerObject = new GameObject("TheModfatherInputBlocker_Canvas");
             DontDestroyOnLoad(blockerObject);
 
             Canvas canvas = blockerObject.AddComponent<Canvas>();

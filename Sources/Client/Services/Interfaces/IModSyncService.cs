@@ -9,4 +9,6 @@ public interface IModSyncService
     void ShowUpdateNotification(Dictionary<string, ModSyncActionEnum> modSyncActions);
 
     IEnumerator SyncMods(Action<Dictionary<string, ModSyncActionEnum>> onCompleted);
+
+    IEnumerator UpdateModsCoroutine(Dictionary<string, ModSyncActionEnum> modSyncActions);
 }

@@ -2,16 +2,40 @@ namespace SwiftXP.SPT.TheModfather.Server.Configurations.Models;
 
 public sealed record ServerConfiguration
 {
-    public string ConfigVersion { get; init; } = "0.1";
+    public string ConfigVersion { get; set; } = "0.1";
 
-    public string[] SyncedPaths { get; init; } = [
+    private string[] _syncedPaths = [
         "SwiftXP.SPT.TheModfather.Updater.exe",
         "BepInEx/patchers",
         "BepInEx/plugins"
     ];
 
-    public string[] ExcludedPaths { get; init; } = [
+    public string[] SyncedPaths
+    {
+        get => _syncedPaths;
+        set => _syncedPaths = NormalizePaths(value);
+    }
+
+    private string[] _excludedPaths = [
         "BepInEx/patchers/spt-prepatch.dll",
         "BepInEx/plugins/spt"
     ];
+
+    public string[] ExcludedPaths
+    {
+        get => _excludedPaths;
+        set => _excludedPaths = NormalizePaths(value);
+    }
+
+    private static string[] NormalizePaths(string[] paths)
+    {
+        if (paths is null) 
+            return [];
+
+        return System.Array.ConvertAll(paths, p => 
+        {
+            var path = p.Replace('\\', '/');
+            return (path.StartsWith("./") ? path.Substring(2) : path).Trim('/');
+        });
+    }
 }

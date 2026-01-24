@@ -144,6 +144,11 @@ public class CheckUpdateService(
 
                 if(destinationPath.Equals(whitelistedPath, StringComparison.OrdinalIgnoreCase))
                     return true;
+
+                string whitelistedDir = whitelistedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+                if(destinationPath.StartsWith(whitelistedDir, StringComparison.OrdinalIgnoreCase))
+                    return true;
             }
 
             return false;
