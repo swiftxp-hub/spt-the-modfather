@@ -5,10 +5,11 @@ using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services;
 using SwiftXP.SPT.Common.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Client.Configurations;
+using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Patches;
 using SwiftXP.SPT.TheModfather.Client.Services;
 using SwiftXP.SPT.TheModfather.Client.Services.Interfaces;
-using SwiftXP.SPT.TheModfather.Configurations;
 
 namespace SwiftXP.SPT.TheModfather.Client;
 
@@ -28,17 +29,18 @@ public class Plugin : BaseUnityPlugin
     {
         Instance = this;
 
-        Configuration = new PluginConfiguration(Config);
-
         MenuScreenShowPatch = new MenuScreenShowPatch();
         MenuScreenShowPatch.Enable();
 
         ISimpleSptLogger simpleSptLogger = new SimpleSptLogger(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_VERSION);
+        IClientConfigurationLoader clientConfigurationLoader = new ClientConfigurationLoader(simpleSptLogger);
         IBaseDirectoryService baseDirectoryService = new BaseDirectoryService();
         IFileSearchService fileSearchService = new FileSearchService();
         IFileHashingService fileHashingService = new FileHashingService();
 
-        ICheckUpdateService checkUpdateService = new CheckUpdateService(simpleSptLogger, baseDirectoryService, fileSearchService, fileHashingService);
+        ICheckUpdateService checkUpdateService = new CheckUpdateService(simpleSptLogger, baseDirectoryService, clientConfigurationLoader,
+            fileSearchService, fileHashingService);
+
         IDownloadUpdateService downloadUpdateService = new DownloadUpdateService(simpleSptLogger, baseDirectoryService);
 
         ModSyncService = new ModSyncService(simpleSptLogger, baseDirectoryService, checkUpdateService, downloadUpdateService);
@@ -51,8 +53,6 @@ public class Plugin : BaseUnityPlugin
 
     public static Plugin? Instance { get; private set; }
     
-    public static PluginConfiguration? Configuration;
-
     public static IModSyncService? ModSyncService { get; private set; }
 
     public static Dictionary<string, ModSyncActionEnum>? ModSyncActions { get; private set; }

@@ -23,7 +23,7 @@ public class ServerFilesHashingService(
         IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, serverConfiguration.SyncedPaths, serverConfiguration.ExcludedPaths);
         Dictionary<string, string> absolutePathHashes = fileHashingService.GetFileHashes(filePathsToHash);
 
-        Dictionary<string, string> relativePathHashes = new Dictionary<string, string>(absolutePathHashes.Count);
+        Dictionary<string, string> relativePathHashes = new(absolutePathHashes.Count);
 
         foreach (KeyValuePair<string, string> kvp in absolutePathHashes)
         {

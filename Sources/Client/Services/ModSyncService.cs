@@ -120,11 +120,16 @@ public class ModSyncService(
                 }
 
                 // Exception for "SwiftXP.SPT.TheModfather.Updater.exe" - self-update.
-                string sourceFilePath = Path.GetFullPath(Path.Combine(baseDir, "TheModfather_Data", "Payload", "SwiftXP.SPT.TheModfather.Updater.exe"));
-                string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, "SwiftXP.SPT.TheModfather.Updater.exe"));
-
-                File.Delete(targetFilePath);
-                File.Move(sourceFilePath, targetFilePath);
+                if(modSyncAction.Key.EndsWith("SwiftXP.SPT.TheModfather.Updater.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    string sourceFilePath = Path.GetFullPath(Path.Combine(baseDir, "TheModfather_Data", "Payload", "SwiftXP.SPT.TheModfather.Updater.exe"));
+                    string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, "SwiftXP.SPT.TheModfather.Updater.exe"));
+                    
+                    if(File.Exists(targetFilePath))
+                        File.Delete(targetFilePath);
+                        
+                    File.Move(sourceFilePath, targetFilePath);
+                }
             }
             else
             {

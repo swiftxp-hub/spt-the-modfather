@@ -3,18 +3,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using BepInEx.Bootstrap;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
+using SwiftXP.SPT.TheModfather.Client.Configurations.Models;
 using SwiftXP.SPT.TheModfather.Client.Services.Interfaces;
-using SwiftXP.SPT.TheModfather.Server.Configurations.Models;
 
 namespace SwiftXP.SPT.TheModfather.Client.Services;
 
 public class CheckUpdateService(
     ISimpleSptLogger simpleSptLogger,
     IBaseDirectoryService baseDirectoryService,
+    IClientConfigurationLoader clientConfigurationLoader,
     IFileSearchService fileSearchService,
     IFileHashingService fileHashingService) : ICheckUpdateService
 {
@@ -26,17 +29,18 @@ public class CheckUpdateService(
     {
         try
         {
+            ClientConfiguration clientConfiguration = clientConfigurationLoader.LoadOrCreate();
             ServerConfiguration serverConfiguration = await GetServerConfigurationAsync();
             Dictionary<string, string> serverFileHashes = await GetServerFileHashesAsync();
 
             string baseDirectory = baseDirectoryService.GetEftBaseDirectory();
             string[] pathsToSearch = serverConfiguration.SyncedPaths;
-            string[] pathsToExclude = [.. serverConfiguration.ExcludedPaths.Union(Plugin.Configuration!.GetExcludedPaths())];
+            string[] pathsToExclude = [.. serverConfiguration.ExcludedPaths.Union(clientConfiguration.ExcludedPaths)];
 
             IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, pathsToSearch, pathsToExclude);
             Dictionary<string, string> absolutePathHashes = fileHashingService.GetFileHashes(filePathsToHash);
 
-            Dictionary<string, string> clientFileHashes = new Dictionary<string, string>(absolutePathHashes.Count, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, string> clientFileHashes = new(absolutePathHashes.Count, StringComparer.OrdinalIgnoreCase);
             foreach (var kvp in absolutePathHashes)
             {
                 string relativePath = Path.GetRelativePath(baseDirectory, kvp.Key);
@@ -49,13 +53,20 @@ public class CheckUpdateService(
 
             foreach (KeyValuePair<string, string> serverEntry in serverFileHashes)
             {
-                if (!clientFileHashes.ContainsKey(serverEntry.Key))
+                if (!clientFileHashes.ContainsKey(serverEntry.Key) 
+                    && !serverEntry.Key.EndsWith("Fika.Headless.dll", StringComparison.OrdinalIgnoreCase)
+                    && !serverEntry.Key.EndsWith("LICENSE-HEADLESS.md", StringComparison.OrdinalIgnoreCase)
+                    && IsHeadlessWhitelisted(serverEntry, baseDirectory, clientConfiguration.HeadlessWhitelist))
+                {
                     result.Add(serverEntry.Key, ModSyncActionEnum.Add);
+                }
             }
 
             foreach (KeyValuePair<string, string> clientEntry in clientFileHashes)
             {
-                if (!serverFileHashes.TryGetValue(clientEntry.Key, out string? serverHash))
+                if (!serverFileHashes.TryGetValue(clientEntry.Key, out string? serverHash)
+                    && !clientEntry.Key.EndsWith("Fika.Headless.dll", StringComparison.OrdinalIgnoreCase)
+                    && !clientEntry.Key.EndsWith("LICENSE-HEADLESS.md", StringComparison.OrdinalIgnoreCase))
                 {
                     result.Add(clientEntry.Key, ModSyncActionEnum.Delete);
                 }
@@ -109,5 +120,24 @@ public class CheckUpdateService(
         Dictionary<string, string> serverFileHashes = new(serverHashesRaw, StringComparer.OrdinalIgnoreCase);
 
         return serverFileHashes;
+    }
+
+    private bool IsHeadlessWhitelisted(KeyValuePair<string, string> entry, string baseDir, string[] headlessWhitelist)
+    {
+        if(Chainloader.PluginInfos.ContainsKey("com.fika.headless"))
+        {
+            foreach(string whitelistEntry in headlessWhitelist)
+            {
+                string destinationPath = Path.GetFullPath(Path.Combine(baseDir, entry.Key));
+                string whitelistedPath = Path.GetFullPath(Path.Combine(baseDir, whitelistEntry));
+
+                if(destinationPath.Equals(whitelistedPath, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        return true;
     }
 }

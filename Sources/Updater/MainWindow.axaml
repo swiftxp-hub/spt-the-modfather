@@ -17,8 +17,8 @@
         <StackPanel VerticalAlignment="Center" 
                     HorizontalAlignment="Center" 
                     Spacing="20">
-            
-            <TextBlock Text="The Modfather"
+
+            <TextBlock Text="The Modfather (v0.1.0)"
                        FontSize="22"
                        FontWeight="Bold"
                        Foreground="White"
