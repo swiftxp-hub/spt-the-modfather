@@ -22,6 +22,10 @@ public class ModSyncService(
     ICheckUpdateService checkUpdateService,
     IDownloadUpdateService downloadUpdateService) : IModSyncService
 {
+    private const string UpdaterExecutableName = "SwiftXP.SPT.TheModfather.Updater.exe";
+    private const string DataDirectoryName = "TheModfather_Data";
+    private const string PayloadDirectoryName = "Payload";
+
     private bool _hasShownModUpdaterWindow = false;
 
     private ModUpdaterUI? _modUpdaterWindow;
@@ -106,6 +110,17 @@ public class ModSyncService(
         bool success = true;
         foreach(var modSyncAction in modSyncActions)
         {
+            if (modSyncAction.Key.Contains("..") || Path.IsPathRooted(modSyncAction.Key))
+            {
+                simpleSptLogger.LogError($"[ModSync] Security Alert: Skipped action for invalid path: {modSyncAction.Key}");
+                success = false;
+                actionCount++;
+
+                UpdateProgress(actionCount, totalActions);
+                
+                continue;
+            }
+
             if(modSyncAction.Value == ModSyncActionEnum.Add || modSyncAction.Value == ModSyncActionEnum.Update)
             {
                 Task downloadTask = downloadUpdateService.DownloadAsync(modSyncAction.Key);
@@ -120,10 +135,10 @@ public class ModSyncService(
                 }
 
                 // Exception for "SwiftXP.SPT.TheModfather.Updater.exe" - self-update.
-                if(modSyncAction.Key.EndsWith("SwiftXP.SPT.TheModfather.Updater.exe", StringComparison.OrdinalIgnoreCase))
+                if(modSyncAction.Key.EndsWith(UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
                 {
-                    string sourceFilePath = Path.GetFullPath(Path.Combine(baseDir, "TheModfather_Data", "Payload", "SwiftXP.SPT.TheModfather.Updater.exe"));
-                    string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, "SwiftXP.SPT.TheModfather.Updater.exe"));
+                    string sourceFilePath = GetPayloadPath(baseDir, UpdaterExecutableName);
+                    string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, UpdaterExecutableName));
                     
                     if(File.Exists(targetFilePath))
                         File.Delete(targetFilePath);
@@ -136,7 +151,7 @@ public class ModSyncService(
                 try 
                 {
                     string absolutePath = Path.GetFullPath(Path.Combine(baseDir, modSyncAction.Key));
-                    if (!absolutePath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+                    if (!absolutePath.StartsWith(baseDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                     {
                         simpleSptLogger.LogError($"Security: Blocked deletion of external path: {absolutePath}");
                     }
@@ -169,7 +184,7 @@ public class ModSyncService(
             yield return new WaitForSeconds(1f);
         }
 
-        string updaterPath = Path.Combine(baseDir, "SwiftXP.SPT.TheModfather.Updater.exe");
+        string updaterPath = Path.Combine(baseDir, UpdaterExecutableName);
 
         if (!File.Exists(updaterPath))
         {
@@ -202,6 +217,11 @@ public class ModSyncService(
         {
             simpleSptLogger.LogException(ex);
         }
+    }
+
+    private string GetPayloadPath(string baseDir, string relativePath)
+    {
+        return Path.GetFullPath(Path.Combine(baseDir, DataDirectoryName, PayloadDirectoryName, relativePath));
     }
 
     private void UpdateProgress(int current, int total)

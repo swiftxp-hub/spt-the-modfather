@@ -24,6 +24,8 @@ public class CheckUpdateService(
     private const string RemotePathToGetFileHashes = "/theModfather/getFileHashes";
 
     private const string RemotePathToGetServerConfiguration = "/theModfather/getServerConfiguration";
+    private const string FikaHeadlessDll = "Fika.Headless.dll";
+    private const string LicenseHeadlessMd = "LICENSE-HEADLESS.md";
     
     public async Task<Dictionary<string, ModSyncActionEnum>> CheckForUpdatesAsync()
     {
@@ -54,8 +56,7 @@ public class CheckUpdateService(
             foreach (KeyValuePair<string, string> serverEntry in serverFileHashes)
             {
                 if (!clientFileHashes.ContainsKey(serverEntry.Key) 
-                    && !serverEntry.Key.EndsWith("Fika.Headless.dll", StringComparison.OrdinalIgnoreCase)
-                    && !serverEntry.Key.EndsWith("LICENSE-HEADLESS.md", StringComparison.OrdinalIgnoreCase)
+                    && !IsIgnoredFile(serverEntry.Key)
                     && IsHeadlessWhitelisted(serverEntry, baseDirectory, clientConfiguration.HeadlessWhitelist))
                 {
                     result.Add(serverEntry.Key, ModSyncActionEnum.Add);
@@ -64,11 +65,14 @@ public class CheckUpdateService(
 
             foreach (KeyValuePair<string, string> clientEntry in clientFileHashes)
             {
-                if (!serverFileHashes.TryGetValue(clientEntry.Key, out string? serverHash)
-                    && !clientEntry.Key.EndsWith("Fika.Headless.dll", StringComparison.OrdinalIgnoreCase)
-                    && !clientEntry.Key.EndsWith("LICENSE-HEADLESS.md", StringComparison.OrdinalIgnoreCase))
+                bool existsOnServer = serverFileHashes.TryGetValue(clientEntry.Key, out string? serverHash);
+
+                if (!existsOnServer)
                 {
-                    result.Add(clientEntry.Key, ModSyncActionEnum.Delete);
+                    if (!IsIgnoredFile(clientEntry.Key))
+                    {
+                        result.Add(clientEntry.Key, ModSyncActionEnum.Delete);
+                    }
                 }
                 else if (!string.Equals(serverHash, clientEntry.Value, StringComparison.OrdinalIgnoreCase))
                 {
@@ -122,14 +126,21 @@ public class CheckUpdateService(
         return serverFileHashes;
     }
 
+    private bool IsIgnoredFile(string key)
+    {
+        return key.EndsWith(FikaHeadlessDll, StringComparison.OrdinalIgnoreCase)
+            || key.EndsWith(LicenseHeadlessMd, StringComparison.OrdinalIgnoreCase);
+    }
+
     private bool IsHeadlessWhitelisted(KeyValuePair<string, string> entry, string baseDir, string[] headlessWhitelist)
     {
         if(Chainloader.PluginInfos.ContainsKey("com.fika.headless"))
         {
+            string destinationPath = Path.GetFullPath(Path.Combine(baseDir, entry.Key));
+
             foreach(string whitelistEntry in headlessWhitelist)
             {
-                string destinationPath = Path.GetFullPath(Path.Combine(baseDir, entry.Key));
-                string whitelistedPath = Path.GetFullPath(Path.Combine(baseDir, whitelistEntry));
+                string whitelistedPath = Path.GetFullPath(Path.Combine(baseDir, whitelistEntry.Replace('\\', '/')));
 
                 if(destinationPath.Equals(whitelistedPath, StringComparison.OrdinalIgnoreCase))
                     return true;

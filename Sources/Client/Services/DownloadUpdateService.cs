@@ -12,11 +12,18 @@ namespace SwiftXP.SPT.TheModfather.Client.Services;
 public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirectoryService baseDirectoryService) : IDownloadUpdateService
 {
     private const string RemotePathToGetFile = "/theModfather/getFile/";
+    private const string DataDirectoryName = "TheModfather_Data";
+    private const string PayloadDirectoryName = "Payload";
     
     public async Task DownloadAsync(string relativeFilePath)
     {
         if (string.IsNullOrWhiteSpace(relativeFilePath))
             return;
+
+        if (relativeFilePath.Contains("..") || Path.IsPathRooted(relativeFilePath))
+        {
+            throw new ArgumentException($"[The Modfather] Security Alert: Path traversal or absolute path detected: {relativeFilePath}");
+        }
 
         byte[]? data;
 
@@ -38,10 +45,10 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
         }
 
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
-        string payloadBaseDir = Path.GetFullPath(Path.Combine(baseDir, "TheModfather_Data", "Payload"));
+        string payloadBaseDir = Path.GetFullPath(Path.Combine(baseDir, DataDirectoryName, PayloadDirectoryName));
         string destinationPath = Path.GetFullPath(Path.Combine(payloadBaseDir, relativeFilePath));
 
-        if (!destinationPath.StartsWith(payloadBaseDir, StringComparison.OrdinalIgnoreCase))
+        if (!destinationPath.StartsWith(payloadBaseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
         {
             throw new UnauthorizedAccessException($"[The Modfather] Security Alert: Blocked attempt to write outside payload directory: {destinationPath}");
         }
