@@ -25,11 +25,15 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
             throw new ArgumentException($"[The Modfather] Security Alert: Path traversal or absolute path detected: {relativeFilePath}");
         }
 
+        TimeSpan defaultTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
+
         byte[]? data;
 
         try 
         {
             string urlPath = RemotePathToGetFile + Uri.EscapeDataString(relativeFilePath.ToUnixStylePath());
+            
+            RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
             data = await RequestHandler.GetDataAsync(urlPath);
         }
         catch (Exception ex)
@@ -37,6 +41,10 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
             simpleSptLogger.LogError($"[The Modfather] Failed to download '{relativeFilePath}': {ex.Message}");
 
             throw;
+        }
+        finally
+        {
+            RequestHandler.HttpClient.HttpClient.Timeout = defaultTimeout;
         }
 
         if (data == null || data.Length == 0)
