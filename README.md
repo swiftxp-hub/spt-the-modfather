@@ -39,10 +39,7 @@ Path specifications must always be relative to your SPT folder. E.g., "BepInEx/p
 
 #### Installation
 
-##### If your SPT installation is normal (i.e. not a baroque cathedral of symbolic links and misplaced folders):
-
-Extract the **BepInEx** folder and the **SwiftXP.SPT.TheModfather.Updater.exe** file into the client.  
-Extract the **SPT** folder into the server.
+Extract the **BepInEx** folder and the **SwiftXP.SPT.TheModfather.Updater.exe** file into the client. Extract the **SPT** folder into the server.
 
 Client:
 ```
