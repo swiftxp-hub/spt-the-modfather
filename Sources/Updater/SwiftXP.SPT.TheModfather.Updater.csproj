@@ -6,6 +6,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <DefineConstants>$(DefineConstants);UPDATER</DefineConstants>
+
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
