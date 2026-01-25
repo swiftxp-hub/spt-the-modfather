@@ -138,7 +138,7 @@ public class ModSyncService(
                 // Exception for "SwiftXP.SPT.TheModfather.Updater.exe" - self-update.
                 if(modSyncAction.Key.EndsWith(UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
                 {
-                    string sourceFilePath = GetPayloadPath(baseDir, UpdaterExecutableName);
+                    string sourceFilePath = GetPayloadPath(baseDir, modSyncAction.Key);
                     string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, UpdaterExecutableName));
                     
                     if(File.Exists(targetFilePath))
@@ -196,14 +196,14 @@ public class ModSyncService(
 
         string[] startOptions = 
         [
-            Chainloader.PluginInfos.ContainsKey("com.fika.headless") ? "--silent" : string.Empty,
+            Chainloader.PluginInfos.ContainsKey("com.fika.headless") ? "--silent true" : string.Empty,
             $"--processid {Process.GetCurrentProcess().Id}"
         ];
 
         ProcessStartInfo updaterStartInfo = new()
         {
             FileName = updaterPath,
-            Arguments = string.Join(" ", startOptions),
+            Arguments = string.Join(" ", startOptions).Trim(),
             WorkingDirectory = baseDir,
             UseShellExecute = false,
             CreateNoWindow = true

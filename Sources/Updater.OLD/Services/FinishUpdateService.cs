@@ -79,9 +79,7 @@ public class FinishUpdateService
             }
             else
             {
-                SimpleLogService.Error("Payload directory not found. Nothing to update.");
-
-                return false;
+                SimpleLogService.Write("Payload directory not found. Nothing to update.");
             }
         }
         catch(Exception exception)

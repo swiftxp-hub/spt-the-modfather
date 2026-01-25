@@ -35,7 +35,7 @@ public sealed record ServerConfiguration
         return System.Array.ConvertAll(paths, p => 
         {
             var path = p.Replace('\\', '/');
-            return (path.StartsWith("./") ? path.Substring(2) : path).Trim('/');
+            return (path.StartsWith("./") ? path.Substring(2) : path).Trim().Trim('/');
         });
     }
 }
