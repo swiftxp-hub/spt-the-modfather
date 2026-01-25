@@ -2,7 +2,7 @@ namespace SwiftXP.SPT.TheModfather.Client.Configurations.Models;
 
 public sealed record ClientConfiguration
 {
-    public string ConfigVersion { get; set; } = "0.1";
+    public string ConfigVersion { get; set; } = "0.2";
 
     private string[] _excludedPaths = [
         "BepInEx/patchers/spt-prepatch.dll",

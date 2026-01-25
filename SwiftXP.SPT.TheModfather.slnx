@@ -2,6 +2,5 @@
   <Folder Name="/Sources/">
     <Project Path="Sources/Client/SwiftXP.SPT.TheModfather.Client.csproj" />
     <Project Path="Sources/Server/SwiftXP.SPT.TheModfather.Server.csproj" />
-    <Project Path="Sources/Updater/SwiftXP.SPT.TheModfather.Updater.csproj" />
   </Folder>
 </Solution>

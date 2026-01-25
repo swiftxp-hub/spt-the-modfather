@@ -12,10 +12,8 @@ namespace SwiftXP.SPT.TheModfather.Client.Services;
 public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirectoryService baseDirectoryService) : IDownloadUpdateService
 {
     private const string RemotePathToGetFile = "/theModfather/getFile/";
-    private const string DataDirectoryName = "TheModfather_Data";
-    private const string PayloadDirectoryName = "Payload";
     
-    public async Task DownloadAsync(string relativeFilePath)
+    public async Task DownloadAsync(string dataDirectory, string payloadDirectory, string relativeFilePath)
     {
         if (string.IsNullOrWhiteSpace(relativeFilePath))
             return;
@@ -53,7 +51,7 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
         }
 
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
-        string payloadBaseDir = Path.GetFullPath(Path.Combine(baseDir, DataDirectoryName, PayloadDirectoryName));
+        string payloadBaseDir = Path.GetFullPath(Path.Combine(baseDir, dataDirectory, payloadDirectory));
         string destinationPath = Path.GetFullPath(Path.Combine(payloadBaseDir, relativeFilePath));
 
         if (!destinationPath.StartsWith(payloadBaseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))

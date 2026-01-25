@@ -108,6 +108,8 @@ public class ModSyncService(
         int totalActions = modSyncActions.Count;
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
 
+        EnsurePayloadExistsAndIsEmpty(baseDir);
+
         bool success = true;
         foreach(var modSyncAction in modSyncActions)
         {
@@ -124,7 +126,7 @@ public class ModSyncService(
 
             if(modSyncAction.Value == ModSyncActionEnum.Add || modSyncAction.Value == ModSyncActionEnum.Update)
             {
-                Task downloadTask = downloadUpdateService.DownloadAsync(modSyncAction.Key);
+                Task downloadTask = downloadUpdateService.DownloadAsync(DataDirectoryName, PayloadDirectoryName, modSyncAction.Key);
                 yield return new WaitUntil(() => downloadTask.IsCompleted);
 
                 if (downloadTask.IsFaulted)
@@ -149,7 +151,13 @@ public class ModSyncService(
             }
             else
             {
-                try 
+                if(modSyncAction.Key.EndsWith(UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
+                {
+                    simpleSptLogger.LogError($"Warning: Blocked deletion of updater executable: {modSyncAction.Key}");
+                    continue;
+                }
+                
+                try
                 {
                     string absolutePath = Path.GetFullPath(Path.Combine(baseDir, modSyncAction.Key));
                     if (!absolutePath.StartsWith(baseDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
@@ -175,6 +183,31 @@ public class ModSyncService(
 
         if(success)
             yield return StartUpdaterAndQuit(baseDir);
+    }
+
+    private void EnsurePayloadExistsAndIsEmpty(string baseDir)
+    {
+        string payloadPath = GetPayloadPath(baseDir);
+
+        if(!Directory.Exists(payloadPath))
+        {
+            Directory.CreateDirectory(payloadPath);
+            return;
+        }
+
+        IEnumerable<string> files = Directory.EnumerateFiles(payloadPath, "*", SearchOption.AllDirectories);
+        if(files.Any())
+        {
+            simpleSptLogger.LogError($"Payload path is not empty. Failed update? Emptying payload directory...");
+
+            foreach(string file in files)
+            {
+                File.Delete(file);
+            }
+
+            Directory.Delete(payloadPath);
+            Directory.CreateDirectory(payloadPath);
+        }
     }
 
     private IEnumerator StartUpdaterAndQuit(string baseDir)
