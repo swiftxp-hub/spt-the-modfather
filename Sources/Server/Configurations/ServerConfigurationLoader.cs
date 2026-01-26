@@ -11,7 +11,7 @@ namespace SwiftXP.SPT.TheModfather.Server.Configurations;
 [Injectable(InjectionType.Scoped)]
 public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> logger) : IServerConfigurationLoader
 {
-    private static readonly string _filePath = Path.Combine(AppContext.BaseDirectory, "user", "mods", "com.swiftxp.spt.themodfather", "config", "config.json");
+    private static readonly string _filePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, Constants.ServerConfigurationPath));
 
     private static readonly JsonSerializerOptions _options = new()
     {

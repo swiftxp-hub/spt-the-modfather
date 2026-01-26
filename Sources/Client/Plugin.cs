@@ -8,6 +8,7 @@ using SwiftXP.SPT.Common.Services;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Configurations;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
+using SwiftXP.SPT.TheModfather.Client.Helpers;
 using SwiftXP.SPT.TheModfather.Client.Patches;
 using SwiftXP.SPT.TheModfather.Client.Services;
 using SwiftXP.SPT.TheModfather.Client.Services.Interfaces;
@@ -50,7 +51,7 @@ public class Plugin : BaseUnityPlugin
         {
             ModSyncActions = result;
 
-            if(Chainloader.PluginInfos.ContainsKey("com.fika.headless") && ModSyncActions.Count > 0)
+            if(PluginInfoHelper.IsFikaHeadlessInstalled() && ModSyncActions.Count > 0)
                 StartCoroutine(ModSyncService.UpdateModsCoroutine(ModSyncActions));
         }));
     }

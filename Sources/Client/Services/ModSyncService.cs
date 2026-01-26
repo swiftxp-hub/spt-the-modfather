@@ -5,10 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using BepInEx.Bootstrap;
 using EFT.UI;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Client.Helpers;
 using SwiftXP.SPT.TheModfather.Client.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.UI;
 using TMPro;
@@ -22,11 +22,6 @@ public class ModSyncService(
     ICheckUpdateService checkUpdateService,
     IDownloadUpdateService downloadUpdateService) : IModSyncService
 {
-    private const string UpdaterExecutableName = "SwiftXP.SPT.TheModfather.Updater.exe";
-    private const string DataDirectoryName = "TheModfather_Data";
-    private const string PayloadDirectoryName = "Payload";
-    private const string DeleteExtension = ".delete";
-
     private bool _hasShownModUpdaterWindow = false;
 
     private ModUpdaterUI? _modUpdaterWindow;
@@ -55,7 +50,7 @@ public class ModSyncService(
 
         if (checkAsyncTask.IsFaulted)
         {
-            simpleSptLogger.LogError($"[ModSync] Update check failed: {checkAsyncTask.Exception?.InnerException?.Message}");
+            simpleSptLogger.LogError($"Update check failed: {checkAsyncTask.Exception?.InnerException?.Message}");
             
             onCompleted([]);
         }
@@ -91,6 +86,7 @@ public class ModSyncService(
     private void OnContinue(Dictionary<string, ModSyncActionEnum> modSyncActions)
     {
         GameObject gameObject = new("ModUpdaterUI");
+
         _modUpdaterWindow = gameObject.AddComponent<ModUpdaterUI>();
         _modUpdaterWindow.UpdateProgress(0.0f, $"Settling all family business (0/{modSyncActions.Count})...");
 
@@ -115,7 +111,7 @@ public class ModSyncService(
         {
             if (modSyncAction.Key.Contains("..") || Path.IsPathRooted(modSyncAction.Key))
             {
-                simpleSptLogger.LogError($"[ModSync] Security Alert: Skipped action for invalid path: {modSyncAction.Key}");
+                simpleSptLogger.LogError($"Security Alert: Skipped action for invalid path: {modSyncAction.Key}");
                 success = false;
                 actionCount++;
 
@@ -126,7 +122,7 @@ public class ModSyncService(
 
             if(modSyncAction.Value == ModSyncActionEnum.Add || modSyncAction.Value == ModSyncActionEnum.Update)
             {
-                Task downloadTask = downloadUpdateService.DownloadAsync(DataDirectoryName, PayloadDirectoryName, modSyncAction.Key);
+                Task downloadTask = downloadUpdateService.DownloadAsync(Constants.DataDirectoryName, Constants.PayloadDirectoryName, modSyncAction.Key);
                 yield return new WaitUntil(() => downloadTask.IsCompleted);
 
                 if (downloadTask.IsFaulted)
@@ -138,10 +134,10 @@ public class ModSyncService(
                 }
 
                 // Exception for "SwiftXP.SPT.TheModfather.Updater.exe" - self-update.
-                if(modSyncAction.Key.EndsWith(UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
+                if(modSyncAction.Key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
                 {
                     string sourceFilePath = GetPayloadPath(baseDir, modSyncAction.Key);
-                    string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, UpdaterExecutableName));
+                    string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, Constants.UpdaterExecutableName));
                     
                     if(File.Exists(targetFilePath))
                         File.Delete(targetFilePath);
@@ -151,7 +147,7 @@ public class ModSyncService(
             }
             else
             {
-                if(modSyncAction.Key.EndsWith(UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
+                if(modSyncAction.Key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
                 {
                     simpleSptLogger.LogError($"Warning: Blocked deletion of updater executable: {modSyncAction.Key}");
                     continue;
@@ -218,7 +214,7 @@ public class ModSyncService(
             yield return new WaitForSeconds(1f);
         }
 
-        string updaterPath = Path.Combine(baseDir, UpdaterExecutableName);
+        string updaterPath = Path.Combine(baseDir, Constants.UpdaterExecutableName);
 
         if (!File.Exists(updaterPath))
         {
@@ -229,7 +225,7 @@ public class ModSyncService(
 
         string[] startOptions = 
         [
-            Chainloader.PluginInfos.ContainsKey("com.fika.headless") ? "--silent true" : string.Empty,
+            PluginInfoHelper.IsFikaHeadlessInstalled() ? "--silent true" : string.Empty,
             $"--processid {Process.GetCurrentProcess().Id}"
         ];
 
@@ -256,7 +252,7 @@ public class ModSyncService(
     private void CreateDeleteInstruction(string payloadDirectory, string relativeFilePath)
     {
         string normalizedPath = relativeFilePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
-        string instructionPath = Path.Combine(payloadDirectory, normalizedPath + DeleteExtension);
+        string instructionPath = Path.Combine(payloadDirectory, normalizedPath + Constants.DeleteExtension);
         
         string? directory = Path.GetDirectoryName(instructionPath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
@@ -269,12 +265,12 @@ public class ModSyncService(
 
     private string GetPayloadPath(string baseDir)
     {
-        return Path.GetFullPath(Path.Combine(baseDir, DataDirectoryName, PayloadDirectoryName));
+        return Path.GetFullPath(Path.Combine(baseDir, Constants.DataDirectoryName, Constants.PayloadDirectoryName));
     }
 
     private string GetPayloadPath(string baseDir, string relativePath)
     {
-        return Path.GetFullPath(Path.Combine(baseDir, DataDirectoryName, PayloadDirectoryName, relativePath));
+        return Path.GetFullPath(Path.Combine(baseDir, Constants.DataDirectoryName, Constants.PayloadDirectoryName, relativePath));
     }
 
     private void UpdateProgress(int current, int total)

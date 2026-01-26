@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using BepInEx.Bootstrap;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Models;
+using SwiftXP.SPT.TheModfather.Client.Helpers;
 using SwiftXP.SPT.TheModfather.Client.Services.Interfaces;
 
 namespace SwiftXP.SPT.TheModfather.Client.Services;
@@ -21,12 +21,6 @@ public class CheckUpdateService(
     IFileSearchService fileSearchService,
     IFileHashingService fileHashingService) : ICheckUpdateService
 {
-    private const string RemotePathToGetFileHashes = "/theModfather/getFileHashes";
-
-    private const string RemotePathToGetServerConfiguration = "/theModfather/getServerConfiguration";
-    private const string FikaHeadlessDll = "Fika.Headless.dll";
-    private const string LicenseHeadlessMd = "LICENSE-HEADLESS.md";
-    
     public async Task<Dictionary<string, ModSyncActionEnum>> CheckForUpdatesAsync()
     {
         try
@@ -92,7 +86,7 @@ public class CheckUpdateService(
 
     private async Task<ServerConfiguration> GetServerConfigurationAsync()
     {
-        string json = await RequestHandler.GetJsonAsync(RemotePathToGetServerConfiguration);
+        string json = await RequestHandler.GetJsonAsync($"{Constants.RoutePrefix}{Constants.RouteGetServerConfiguration}");
         if (string.IsNullOrWhiteSpace(json))
         {
             throw new Exception("Empty JSON-response");
@@ -109,7 +103,7 @@ public class CheckUpdateService(
 
     private async Task<Dictionary<string, string>> GetServerFileHashesAsync()
     {
-        string json = await RequestHandler.GetJsonAsync(RemotePathToGetFileHashes);
+        string json = await RequestHandler.GetJsonAsync($"{Constants.RoutePrefix}{Constants.RouteGetHashes}");
         if (string.IsNullOrWhiteSpace(json))
         {
             throw new Exception("Empty JSON-response");
@@ -128,13 +122,13 @@ public class CheckUpdateService(
 
     private bool IsIgnoredFile(string key)
     {
-        return key.EndsWith(FikaHeadlessDll, StringComparison.OrdinalIgnoreCase)
-            || key.EndsWith(LicenseHeadlessMd, StringComparison.OrdinalIgnoreCase);
+        return key.EndsWith(Constants.FikaHeadlessDll, StringComparison.OrdinalIgnoreCase)
+            || key.EndsWith(Constants.LicenseHeadlessMd, StringComparison.OrdinalIgnoreCase);
     }
 
     private bool IsHeadlessWhitelisted(KeyValuePair<string, string> entry, string baseDir, string[] headlessWhitelist)
     {
-        if(Chainloader.PluginInfos.ContainsKey("com.fika.headless"))
+        if(PluginInfoHelper.IsFikaHeadlessInstalled())
         {
             string destinationPath = Path.GetFullPath(Path.Combine(baseDir, entry.Key));
 

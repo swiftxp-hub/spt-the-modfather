@@ -7,11 +7,12 @@ using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Utils;
+using SwiftXP.SPT.TheModfather.Http.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Models;
 using SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 
-namespace SwiftXP.SPT.TheModfather;
+namespace SwiftXP.SPT.TheModfather.Server.Http;
 
 [Injectable(InjectionType = InjectionType.Singleton, TypePriority = OnLoadOrder.PreSptModLoader)]
 public class ModHttpListener(
@@ -21,17 +22,9 @@ public class ModHttpListener(
     IServerFilesHashingService serverFilesHashingService)
     : IModHttpListener
 {
-    private const string RoutePrefix = "/theModfather";
-
-    private const string RouteGetHashes = "/getFileHashes";
-    
-    private const string RouteGetFile = "/getFile";
-
-    private const string RouteGetServerConfiguration = "/getServerConfiguration";
-
     public bool CanHandle(MongoId sessionId, HttpContext context)
     {
-        return context.Request.Path.StartsWithSegments(RoutePrefix, StringComparison.OrdinalIgnoreCase);
+        return context.Request.Path.StartsWithSegments(Constants.RoutePrefix, StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task Handle(MongoId sessionId, HttpContext context)
@@ -40,15 +33,15 @@ public class ModHttpListener(
         {
             string requestPath = context.Request.Path.Value ?? string.Empty;
 
-            if (IsRoute(requestPath, RouteGetHashes))
+            if (IsRoute(requestPath, Constants.RouteGetHashes))
             {
                 await HandleGetFileHashesAsync(context);
             }
-            else if (requestPath.StartsWith($"{RoutePrefix}{RouteGetFile}", StringComparison.OrdinalIgnoreCase))
+            else if (requestPath.StartsWith($"{Constants.RoutePrefix}{Constants.RouteGetFile}", StringComparison.OrdinalIgnoreCase))
             {
                 await HandleGetFileAsync(context);
             }
-            else if (IsRoute(requestPath, RouteGetServerConfiguration))
+            else if (IsRoute(requestPath, Constants.RouteGetServerConfiguration))
             {
                 await HandleGetServerConfigurationAsync(context);
             }
@@ -75,7 +68,7 @@ public class ModHttpListener(
     private async Task HandleGetFileAsync(HttpContext context)
     {
         string pathSegment = context.Request.Path.Value?
-            .Replace($"{RoutePrefix}{RouteGetFile}/", "", StringComparison.OrdinalIgnoreCase) ?? "";
+            .Replace($"{Constants.RoutePrefix}{Constants.RouteGetFile}/", "", StringComparison.OrdinalIgnoreCase) ?? "";
 
         string requestedFilePath = Uri.UnescapeDataString(pathSegment);
         if (string.IsNullOrWhiteSpace(requestedFilePath) || requestedFilePath.Contains(".."))
@@ -122,6 +115,6 @@ public class ModHttpListener(
 
     private static bool IsRoute(string path, string subRoute)
     {
-        return path.Equals($"{RoutePrefix}{subRoute}", StringComparison.OrdinalIgnoreCase);
+        return path.Equals($"{Constants.RoutePrefix}{subRoute}", StringComparison.OrdinalIgnoreCase);
     }
 }

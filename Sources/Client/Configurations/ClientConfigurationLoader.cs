@@ -9,7 +9,7 @@ namespace SwiftXP.SPT.TheModfather.Client.Configurations;
 
 public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClientConfigurationLoader
 {
-    private static readonly string _filePath = Path.Combine(AppContext.BaseDirectory, "TheModfather_Data", "config.json");
+    private static readonly string _filePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, Constants.ClientConfigurationPath));
 
     private static readonly JsonSerializerSettings _options = new()
     {
@@ -35,7 +35,7 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
         }
         catch (JsonException)
         {
-            simpleSptLogger.LogError($"[ERROR] Configuration is invalid (syntax-error): {_filePath}");
+            simpleSptLogger.LogError($"Configuration is invalid (syntax-error): {_filePath}");
 
             throw;
         }

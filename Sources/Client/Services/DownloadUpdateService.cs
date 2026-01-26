@@ -11,8 +11,6 @@ namespace SwiftXP.SPT.TheModfather.Client.Services;
 
 public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirectoryService baseDirectoryService) : IDownloadUpdateService
 {
-    private const string RemotePathToGetFile = "/theModfather/getFile/";
-    
     public async Task DownloadAsync(string dataDirectory, string payloadDirectory, string relativeFilePath)
     {
         if (string.IsNullOrWhiteSpace(relativeFilePath))
@@ -20,7 +18,7 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
 
         if (relativeFilePath.Contains("..") || Path.IsPathRooted(relativeFilePath))
         {
-            throw new ArgumentException($"[The Modfather] Security Alert: Path traversal or absolute path detected: {relativeFilePath}");
+            throw new ArgumentException($"Security Alert: Path traversal or absolute path detected: {relativeFilePath}");
         }
 
         TimeSpan defaultTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
@@ -29,14 +27,14 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
 
         try 
         {
-            string urlPath = RemotePathToGetFile + Uri.EscapeDataString(relativeFilePath.ToUnixStylePath());
+            string urlPath = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/" + Uri.EscapeDataString(relativeFilePath.ToUnixStylePath());
             
             RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
             data = await RequestHandler.GetDataAsync(urlPath);
         }
         catch (Exception ex)
         {
-            simpleSptLogger.LogError($"[The Modfather] Failed to download '{relativeFilePath}': {ex.Message}");
+            simpleSptLogger.LogError($"Failed to download '{relativeFilePath}': {ex.Message}");
 
             throw;
         }
@@ -47,7 +45,7 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
 
         if (data == null || data.Length == 0)
         {
-            throw new InvalidOperationException($"[The Modfather] Downloaded file '{relativeFilePath}' is empty.");
+            throw new InvalidOperationException($"Downloaded file '{relativeFilePath}' is empty.");
         }
 
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
@@ -56,7 +54,7 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
 
         if (!destinationPath.StartsWith(payloadBaseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
         {
-            throw new UnauthorizedAccessException($"[The Modfather] Security Alert: Blocked attempt to write outside payload directory: {destinationPath}");
+            throw new UnauthorizedAccessException($"Security Alert: Blocked attempt to write outside payload directory: {destinationPath}");
         }
         
         string? directoryPath = Path.GetDirectoryName(destinationPath);

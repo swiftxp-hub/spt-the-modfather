@@ -2,7 +2,7 @@ namespace SwiftXP.SPT.TheModfather.Client.Configurations.Models;
 
 public sealed record ServerConfiguration
 {
-    public string ConfigVersion { get; set; } = "0.2";
+    public string ConfigVersion { get; set; } = Constants.Version;
 
     private string[] _syncedPaths = [
         "SwiftXP.SPT.TheModfather.Updater.exe",
