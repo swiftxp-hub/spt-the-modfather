@@ -22,6 +22,8 @@ namespace SwiftXP.SPT.TheModfather.Updater
 
             if(CommandLineParameterService.IsSilent())
             {
+                logService.Write("Silent mode activated");
+
                 await updaterService.Update();
             }
             else

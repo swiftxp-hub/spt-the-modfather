@@ -31,6 +31,29 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
             
             RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
             data = await RequestHandler.GetDataAsync(urlPath);
+
+            if (data == null || data.Length == 0)
+            {
+                throw new InvalidOperationException($"Downloaded file '{relativeFilePath}' is empty.");
+            }
+
+            string baseDir = baseDirectoryService.GetEftBaseDirectory();
+            string payloadBaseDir = Path.GetFullPath(Path.Combine(baseDir, dataDirectory, payloadDirectory));
+            string destinationPath = Path.GetFullPath(Path.Combine(payloadBaseDir, relativeFilePath));
+
+            if (!destinationPath.StartsWith(payloadBaseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException($"Security Alert: Blocked attempt to write outside payload directory: {destinationPath}");
+            }
+
+            string? directoryPath = Path.GetDirectoryName(destinationPath);
+
+            if (!string.IsNullOrEmpty(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            await File.WriteAllBytesAsync(destinationPath, data);
         }
         catch (Exception ex)
         {
@@ -42,28 +65,5 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
         {
             RequestHandler.HttpClient.HttpClient.Timeout = defaultTimeout;
         }
-
-        if (data == null || data.Length == 0)
-        {
-            throw new InvalidOperationException($"Downloaded file '{relativeFilePath}' is empty.");
-        }
-
-        string baseDir = baseDirectoryService.GetEftBaseDirectory();
-        string payloadBaseDir = Path.GetFullPath(Path.Combine(baseDir, dataDirectory, payloadDirectory));
-        string destinationPath = Path.GetFullPath(Path.Combine(payloadBaseDir, relativeFilePath));
-
-        if (!destinationPath.StartsWith(payloadBaseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new UnauthorizedAccessException($"Security Alert: Blocked attempt to write outside payload directory: {destinationPath}");
-        }
-        
-        string? directoryPath = Path.GetDirectoryName(destinationPath);
-        
-        if (!string.IsNullOrEmpty(directoryPath))
-        {
-            Directory.CreateDirectory(directoryPath);
-        }
-
-        await File.WriteAllBytesAsync(destinationPath, data);
     }
 }

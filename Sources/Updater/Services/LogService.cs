@@ -4,7 +4,7 @@ namespace SwiftXP.SPT.TheModfather.Updater.Services;
 
 public class LogService : ILogService
 {
-    private static readonly string LogPath = Path.Combine(AppContext.BaseDirectory, "SwiftXP.SPT.TheModfather.Updater.log");
+    private static readonly string LogPath = Path.Combine(AppContext.BaseDirectory, $"SwiftXP.SPT.TheModfather.Updater.{DateTime.Now:yyyy-MM-dd}.log");
 
     private static readonly object _lock = new();
 

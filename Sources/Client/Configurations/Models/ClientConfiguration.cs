@@ -16,6 +16,8 @@ public sealed record ClientConfiguration
     }
 
     private string[] _headlessWhitelist = [
+        "SwiftXP.SPT.TheModfather.Updater.exe",
+        "BepInEx/plugins/com.swiftxp.spt.themodfather",
         "BepInEx/plugins/acidphantasm-botplacementsystem",
         "BepInEx/plugins/DrakiaXYZ-Waypoints",
         "BepInEx/plugins/SAIN",

@@ -23,7 +23,7 @@ public class UpdaterService(ILogService logService, IProcessWatcher processWatch
                     deleteService.ProcessDeleteInstructions(basePath!, payloadPath!, DeleteInstructionSuffix);
                     moverService.MoveFiles(basePath!, payloadPath!);
 
-                    logService.Write("Update completed.");
+                    logService.Write("Update completed");
 
                     await CleanUpPayloadDirectory(payloadPath!);
 
@@ -33,10 +33,10 @@ public class UpdaterService(ILogService logService, IProcessWatcher processWatch
         }
         catch (Exception ex)
         {
-            logService.Error("Unexpected error occured.", ex);
+            logService.Error("Unexpected error occured", ex);
         }
 
-        logService.Write("Update failed.");
+        logService.Write("Update failed");
 
         return false;
     }

@@ -13,7 +13,7 @@ public class DeleteService(ILogService logService) : IDeleteService
 
         string[] instructionFiles = Directory.GetFiles(payloadPath, "*" + deleteInstructionSuffix, SearchOption.AllDirectories);
 
-        logService.Write($"{instructionFiles.Length} delete instructions found.");
+        logService.Write($"{instructionFiles.Length} delete instructions found");
 
         int counter = 0;
         foreach (string instructionFile in instructionFiles)
@@ -37,7 +37,8 @@ public class DeleteService(ILogService logService) : IDeleteService
                 logService.Write($"File did not exist (unexpected): {targetPath}");
             }
 
-            CleanUpIfEmptyDirectory(targetPath);
+            // Not ready for prod for now...
+            // CleanUpIfEmptyDirectory(targetPath);
 
             logService.Write($"Deleting instructions file: {instructionFile}");
 
@@ -47,7 +48,7 @@ public class DeleteService(ILogService logService) : IDeleteService
         }
 
         if(counter > 0)
-            logService.Write($"Delete instructions processed. Deleted {counter} files.");
+            logService.Write($"Delete instructions processed. Deleted {counter} files");
     }
 
     private void CleanUpIfEmptyDirectory(string targetPath)
@@ -55,7 +56,7 @@ public class DeleteService(ILogService logService) : IDeleteService
         string? parentPath = Path.GetDirectoryName(targetPath);
         if (parentPath != null)
         {
-            bool isEmpty = !Directory.EnumerateFileSystemEntries(parentPath, "*", SearchOption.AllDirectories).Any();
+            bool isEmpty = !Directory.EnumerateFiles(parentPath, "*", SearchOption.AllDirectories).Any();
             if (isEmpty)
             {
                 logService.Write($"Deleting directory (is empty): {parentPath}");

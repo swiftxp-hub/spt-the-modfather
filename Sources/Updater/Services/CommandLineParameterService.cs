@@ -30,6 +30,6 @@ public static class CommandLineParameterService
             .AddCommandLine(args)
             .Build();
 
-        return config["silent"] != null;
+        return config["silent"] == "true";
     }
 }

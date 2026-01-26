@@ -10,7 +10,7 @@ public class MoverService(ILogService logService) : IMoverService
 
         string[] filePaths = Directory.GetFiles(payloadPath, "*", SearchOption.AllDirectories);
 
-        logService.Write($"Found {filePaths.Length} file(s) to be moved.");
+        logService.Write($"Found {filePaths.Length} file(s) to be moved");
 
         int counter = 0;
         foreach (string sourceFilePath in filePaths)
@@ -31,6 +31,6 @@ public class MoverService(ILogService logService) : IMoverService
         }
 
         if(counter > 0)
-            logService.Write($"Moved {counter} files.");
+            logService.Write($"Moved {counter} files");
     }
 }

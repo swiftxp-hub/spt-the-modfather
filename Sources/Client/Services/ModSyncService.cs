@@ -104,10 +104,11 @@ public class ModSyncService(
         int totalActions = modSyncActions.Count;
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
 
-        EnsurePayloadExistsAndIsEmpty(baseDir);
+        Task ensurePayloadTask = EnsurePayloadExistsAndIsEmpty(baseDir);
+        yield return new WaitUntil(() => ensurePayloadTask.IsCompleted);
 
         bool success = true;
-        foreach(var modSyncAction in modSyncActions)
+        foreach(KeyValuePair<string, ModSyncActionEnum> modSyncAction in modSyncActions)
         {
             if (modSyncAction.Key.Contains("..") || Path.IsPathRooted(modSyncAction.Key))
             {
@@ -133,16 +134,24 @@ public class ModSyncService(
                     break;
                 }
 
-                // Exception for "SwiftXP.SPT.TheModfather.Updater.exe" - self-update.
-                if(modSyncAction.Key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
+                try
                 {
-                    string sourceFilePath = GetPayloadPath(baseDir, modSyncAction.Key);
-                    string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, Constants.UpdaterExecutableName));
-                    
-                    if(File.Exists(targetFilePath))
-                        File.Delete(targetFilePath);
-                        
-                    File.Move(sourceFilePath, targetFilePath);
+                    // Exception for "SwiftXP.SPT.TheModfather.Updater.exe" - self-update.
+                    if (modSyncAction.Key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string sourceFilePath = GetPayloadPath(baseDir, modSyncAction.Key);
+                        string targetFilePath = Path.GetFullPath(Path.Combine(baseDir, Constants.UpdaterExecutableName));
+
+                        if (File.Exists(targetFilePath))
+                            File.Delete(targetFilePath);
+
+                        File.Move(sourceFilePath, targetFilePath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    simpleSptLogger.LogException(ex);
+                    throw;
                 }
             }
             else
@@ -181,7 +190,7 @@ public class ModSyncService(
             yield return StartUpdaterAndQuit(baseDir);
     }
 
-    private void EnsurePayloadExistsAndIsEmpty(string baseDir)
+    private async Task EnsurePayloadExistsAndIsEmpty(string baseDir)
     {
         string payloadPath = GetPayloadPath(baseDir);
 
@@ -200,6 +209,8 @@ public class ModSyncService(
             {
                 File.Delete(file);
             }
+
+            await Task.Delay(200);
 
             Directory.Delete(payloadPath);
             Directory.CreateDirectory(payloadPath);

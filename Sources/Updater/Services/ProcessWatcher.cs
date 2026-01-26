@@ -14,7 +14,7 @@ public class ProcessWatcher(ILogService logService) : IProcessWatcher
         int? processId = GetEftProcessId();
         if (!processId.HasValue)
         {
-            logService.Write("No EFT-Process ID found via Args or Name. Assuming closed.");
+            logService.Write("No EFT-Process ID found via Args or Name. Assuming closed");
             
             return true;
         }
@@ -48,7 +48,7 @@ public class ProcessWatcher(ILogService logService) : IProcessWatcher
         }
         catch (Exception ex)
         {
-            logService.Error("Unexpected error while waiting for process exit.", ex);
+            logService.Error("Unexpected error while waiting for process exit", ex);
 
             return false;
         }
