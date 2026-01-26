@@ -6,11 +6,11 @@ public class MoverService(ILogService logService) : IMoverService
 {
     public void MoveFiles(string basePath, string payloadPath)
     {
-        logService.Write("Moving files...");
+        logService.WriteMessage("Moving files...");
 
         string[] filePaths = Directory.GetFiles(payloadPath, "*", SearchOption.AllDirectories);
 
-        logService.Write($"Found {filePaths.Length} file(s) to be moved");
+        logService.WriteMessage($"Found {filePaths.Length} file(s) to be moved");
 
         int counter = 0;
         foreach (string sourceFilePath in filePaths)
@@ -24,13 +24,13 @@ public class MoverService(ILogService logService) : IMoverService
                 Directory.CreateDirectory(directoryPath);
             }
 
-            logService.Write($"Moving file '{sourceFilePath}' to '{targetFilePath}'...");
+            logService.WriteMessage($"Moving file '{sourceFilePath}' to '{targetFilePath}'...");
 
             File.Move(sourceFilePath, targetFilePath, true);
             counter++;
         }
 
         if(counter > 0)
-            logService.Write($"Moved {counter} files");
+            logService.WriteMessage($"Moved {counter} files");
     }
 }

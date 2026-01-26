@@ -15,11 +15,11 @@ public class ServerFilesHashingService(
     IFileSearchService fileSearchService,
     IFileHashingService fileHashingService) : IServerFilesHashingService
 {
-    public Dictionary<string, string> Get()
+    public Dictionary<string, string> GetServerFileHashes()
     {
         ServerConfiguration serverConfiguration = serverConfigurationLoader.LoadOrCreate();
         string baseDirectory = baseDirectoryService.GetEftBaseDirectory();
-        
+
         IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, serverConfiguration.SyncedPaths, serverConfiguration.ExcludedPaths);
         Dictionary<string, string> absolutePathHashes = fileHashingService.GetFileHashes(filePathsToHash);
 

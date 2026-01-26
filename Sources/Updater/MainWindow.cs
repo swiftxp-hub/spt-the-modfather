@@ -16,7 +16,7 @@ public partial class MainWindow : Form
 
     private async void MainWindow_Load(object sender, EventArgs e)
     {
-        bool updated = await _updaterService.Update();
+        bool updated = await _updaterService.UpdateModsAsync();
         string updateStatus = "Update completed.";
 
         if (!updated)
@@ -40,12 +40,12 @@ public partial class MainWindow : Form
             await Task.Delay(1000);
         }
 
-        this.Close();
+        Close();
     }
 
     private void UpdateStatusText(string text)
     {
         StatusText.Text = text;
-        StatusText.Left = (this.ClientSize.Width - StatusText.Width) / 2;
+        StatusText.Left = (ClientSize.Width - StatusText.Width) / 2;
     }
 }

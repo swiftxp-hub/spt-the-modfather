@@ -9,33 +9,33 @@ namespace SwiftXP.SPT.TheModfather.Client.Configurations;
 
 public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClientConfigurationLoader
 {
-    private static readonly string _filePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, Constants.ClientConfigurationPath));
+    private static readonly string s_filePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, Constants.ClientConfigurationPath));
 
-    private static readonly JsonSerializerSettings _options = new()
+    private static readonly JsonSerializerSettings s_options = new()
     {
         Formatting = Formatting.Indented,
     };
 
     public ClientConfiguration LoadOrCreate()
     {
-        if (!File.Exists(_filePath))
+        if (!File.Exists(s_filePath))
         {
-            var defaultConfig = new ClientConfiguration();
-            Save(defaultConfig); 
+            ClientConfiguration defaultConfig = new ClientConfiguration();
+            Save(defaultConfig);
 
             return defaultConfig;
         }
 
         try
         {
-            string jsonString = File.ReadAllText(_filePath);
-            ClientConfiguration? config = JsonConvert.DeserializeObject<ClientConfiguration>(jsonString, _options);
-            
+            string jsonString = File.ReadAllText(s_filePath);
+            ClientConfiguration? config = JsonConvert.DeserializeObject<ClientConfiguration>(jsonString, s_options);
+
             return config ?? new ClientConfiguration();
         }
         catch (JsonException)
         {
-            simpleSptLogger.LogError($"Configuration is invalid (syntax-error): {_filePath}");
+            simpleSptLogger.LogError($"Configuration is invalid (syntax-error): {s_filePath}");
 
             throw;
         }
@@ -43,15 +43,15 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
 
     public static void Save(ClientConfiguration config)
     {
-        string? directory = Path.GetDirectoryName(_filePath);
-        
+        string? directory = Path.GetDirectoryName(s_filePath);
+
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        string jsonString = JsonConvert.SerializeObject(config, _options);
+        string jsonString = JsonConvert.SerializeObject(config, s_options);
 
-        File.WriteAllText(_filePath, jsonString);
+        File.WriteAllText(s_filePath, jsonString);
     }
 }

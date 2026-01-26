@@ -1,9 +1,9 @@
 namespace SwiftXP.SPT.TheModfather.Client.Services;
 
-public enum ModSyncActionEnum
+public enum ModSyncAction
 {
     Add,
-    
+
     Update,
 
     Delete

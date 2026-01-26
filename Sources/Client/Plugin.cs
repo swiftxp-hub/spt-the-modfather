@@ -20,19 +20,19 @@ namespace SwiftXP.SPT.TheModfather.Client;
 [BepInProcess("EscapeFromTarkov.exe")]
 public class Plugin : BaseUnityPlugin
 {
-    private static ModulePatch? MenuScreenShowPatch;
+    private static ModulePatch? s_menuScreenShowPatch;
 
     public static void DisableMenuScreenShowPatch()
     {
-        MenuScreenShowPatch!.Disable();
+        s_menuScreenShowPatch!.Disable();
     }
 
     private void Awake()
     {
         Instance = this;
 
-        MenuScreenShowPatch = new MenuScreenShowPatch();
-        MenuScreenShowPatch.Enable();
+        s_menuScreenShowPatch = new MenuScreenShowPatch();
+        s_menuScreenShowPatch.Enable();
 
         ISimpleSptLogger simpleSptLogger = new SimpleSptLogger(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_VERSION);
         IClientConfigurationLoader clientConfigurationLoader = new ClientConfigurationLoader(simpleSptLogger);
@@ -46,19 +46,19 @@ public class Plugin : BaseUnityPlugin
         IDownloadUpdateService downloadUpdateService = new DownloadUpdateService(simpleSptLogger, baseDirectoryService);
 
         ModSyncService = new ModSyncService(simpleSptLogger, baseDirectoryService, checkUpdateService, downloadUpdateService);
-        
+
         StartCoroutine(ModSyncService.SyncMods((result) =>
         {
             ModSyncActions = result;
 
-            if(PluginInfoHelper.IsFikaHeadlessInstalled() && ModSyncActions.Count > 0)
+            if (PluginInfoHelper.IsFikaHeadlessInstalled() && ModSyncActions.Count > 0)
                 StartCoroutine(ModSyncService.UpdateModsCoroutine(ModSyncActions));
         }));
     }
 
     public static Plugin? Instance { get; private set; }
-    
+
     public static IModSyncService? ModSyncService { get; private set; }
 
-    public static Dictionary<string, ModSyncActionEnum>? ModSyncActions { get; private set; }
+    public static Dictionary<string, ModSyncAction>? ModSyncActions { get; private set; }
 }

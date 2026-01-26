@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SPT.Common.Http;
+using SwiftXP.SPT.Common.Extensions;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
@@ -21,7 +22,7 @@ public class CheckUpdateService(
     IFileSearchService fileSearchService,
     IFileHashingService fileHashingService) : ICheckUpdateService
 {
-    public async Task<Dictionary<string, ModSyncActionEnum>> CheckForUpdatesAsync()
+    public async Task<Dictionary<string, ModSyncAction>> CheckForUpdatesAsync()
     {
         try
         {
@@ -37,23 +38,23 @@ public class CheckUpdateService(
             Dictionary<string, string> absolutePathHashes = fileHashingService.GetFileHashes(filePathsToHash);
 
             Dictionary<string, string> clientFileHashes = new(absolutePathHashes.Count, StringComparer.OrdinalIgnoreCase);
-            foreach (var kvp in absolutePathHashes)
+            foreach (KeyValuePair<string, string> kvp in absolutePathHashes)
             {
                 string relativePath = Path.GetRelativePath(baseDirectory, kvp.Key);
                 string normalizedKey = relativePath.Replace('\\', '/');
-                
+
                 clientFileHashes[normalizedKey] = kvp.Value;
             }
 
-            Dictionary<string, ModSyncActionEnum> result = new(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, ModSyncAction> result = new(StringComparer.OrdinalIgnoreCase);
 
             foreach (KeyValuePair<string, string> serverEntry in serverFileHashes)
             {
-                if (!clientFileHashes.ContainsKey(serverEntry.Key) 
+                if (!clientFileHashes.ContainsKey(serverEntry.Key)
                     && !IsIgnoredFile(serverEntry.Key)
                     && IsHeadlessWhitelisted(serverEntry, baseDirectory, clientConfiguration.HeadlessWhitelist))
                 {
-                    result.Add(serverEntry.Key, ModSyncActionEnum.Add);
+                    result.Add(serverEntry.Key, ModSyncAction.Add);
                 }
             }
 
@@ -63,14 +64,15 @@ public class CheckUpdateService(
 
                 if (!existsOnServer)
                 {
-                    if (!IsIgnoredFile(clientEntry.Key))
+                    if (!IsIgnoredFile(clientEntry.Key)
+                        && IsModFile(clientEntry.Key)) // Prevent self-delete
                     {
-                        result.Add(clientEntry.Key, ModSyncActionEnum.Delete);
+                        result.Add(clientEntry.Key, ModSyncAction.Delete);
                     }
                 }
                 else if (!string.Equals(serverHash, clientEntry.Value, StringComparison.OrdinalIgnoreCase))
                 {
-                    result.Add(clientEntry.Key, ModSyncActionEnum.Update);
+                    result.Add(clientEntry.Key, ModSyncAction.Update);
                 }
             }
 
@@ -84,35 +86,35 @@ public class CheckUpdateService(
         }
     }
 
-    private async Task<ServerConfiguration> GetServerConfigurationAsync()
+    private static async Task<ServerConfiguration> GetServerConfigurationAsync()
     {
         string json = await RequestHandler.GetJsonAsync($"{Constants.RoutePrefix}{Constants.RouteGetServerConfiguration}");
         if (string.IsNullOrWhiteSpace(json))
         {
-            throw new Exception("Empty JSON-response");
+            throw new InvalidOperationException("Empty JSON-response");
         }
 
         ServerConfiguration? serverConfiguration = JsonConvert.DeserializeObject<ServerConfiguration>(json);
         if (serverConfiguration == null)
         {
-            throw new Exception("JSON-response could not be deserialized");
+            throw new InvalidOperationException("JSON-response could not be deserialized");
         }
 
         return serverConfiguration;
     }
 
-    private async Task<Dictionary<string, string>> GetServerFileHashesAsync()
+    private static async Task<Dictionary<string, string>> GetServerFileHashesAsync()
     {
         string json = await RequestHandler.GetJsonAsync($"{Constants.RoutePrefix}{Constants.RouteGetHashes}");
         if (string.IsNullOrWhiteSpace(json))
         {
-            throw new Exception("Empty JSON-response");
+            throw new InvalidOperationException("Empty JSON-response");
         }
 
         Dictionary<string, string>? serverHashesRaw = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
         if (serverHashesRaw == null)
         {
-            throw new Exception("JSON-response could not be deserialized");
+            throw new InvalidOperationException("JSON-response could not be deserialized");
         }
 
         Dictionary<string, string> serverFileHashes = new(serverHashesRaw, StringComparer.OrdinalIgnoreCase);
@@ -120,28 +122,34 @@ public class CheckUpdateService(
         return serverFileHashes;
     }
 
-    private bool IsIgnoredFile(string key)
+    private static bool IsModFile(string key)
+    {
+        return key.ToUnixStylePath().EndsWith(Constants.ModDllPath, StringComparison.OrdinalIgnoreCase)
+            || key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsIgnoredFile(string key)
     {
         return key.EndsWith(Constants.FikaHeadlessDll, StringComparison.OrdinalIgnoreCase)
             || key.EndsWith(Constants.LicenseHeadlessMd, StringComparison.OrdinalIgnoreCase);
     }
 
-    private bool IsHeadlessWhitelisted(KeyValuePair<string, string> entry, string baseDir, string[] headlessWhitelist)
+    private static bool IsHeadlessWhitelisted(KeyValuePair<string, string> entry, string baseDir, string[] headlessWhitelist)
     {
-        if(PluginInfoHelper.IsFikaHeadlessInstalled())
+        if (PluginInfoHelper.IsFikaHeadlessInstalled())
         {
             string destinationPath = Path.GetFullPath(Path.Combine(baseDir, entry.Key));
 
-            foreach(string whitelistEntry in headlessWhitelist)
+            foreach (string whitelistEntry in headlessWhitelist)
             {
                 string whitelistedPath = Path.GetFullPath(Path.Combine(baseDir, whitelistEntry.Replace('\\', '/')));
 
-                if(destinationPath.Equals(whitelistedPath, StringComparison.OrdinalIgnoreCase))
+                if (destinationPath.Equals(whitelistedPath, StringComparison.OrdinalIgnoreCase))
                     return true;
 
                 string whitelistedDir = whitelistedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
 
-                if(destinationPath.StartsWith(whitelistedDir, StringComparison.OrdinalIgnoreCase))
+                if (destinationPath.StartsWith(whitelistedDir, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
 

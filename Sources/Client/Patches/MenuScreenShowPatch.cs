@@ -11,9 +11,9 @@ public class MenuScreenShowPatch : ModulePatch
         AccessTools.FirstMethod(typeof(MenuScreen), x => x.Name == nameof(MenuScreen.Show));
 
     [PatchPostfix]
-    public static void PatchPostfix(MenuScreen __instance)
+    public static void PatchPostfix(MenuScreen instance)
     {
-        if(Plugin.ModSyncActions != null && Plugin.ModSyncActions.Count > 0)
+        if (Plugin.ModSyncActions != null && Plugin.ModSyncActions.Count > 0)
             Plugin.ModSyncService!.ShowUpdateNotification(Plugin.ModSyncActions);
 
         Plugin.DisableMenuScreenShowPatch();

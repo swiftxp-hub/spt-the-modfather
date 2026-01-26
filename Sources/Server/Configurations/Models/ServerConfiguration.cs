@@ -1,3 +1,5 @@
+using System;
+
 namespace SwiftXP.SPT.TheModfather.Server.Configurations.Models;
 
 public sealed record ServerConfiguration
@@ -29,13 +31,13 @@ public sealed record ServerConfiguration
 
     private static string[] NormalizePaths(string[] paths)
     {
-        if (paths is null) 
+        if (paths is null)
             return [];
 
-        return System.Array.ConvertAll(paths, p => 
+        return Array.ConvertAll(paths, p =>
         {
-            var path = p.Replace('\\', '/');
-            return (path.StartsWith("./") ? path.Substring(2) : path).Trim().Trim('/');
+            string path = p.Replace('\\', '/');
+            return (path.StartsWith("./", StringComparison.InvariantCulture) ? path.Substring(2) : path).Trim().Trim('/');
         });
     }
 }

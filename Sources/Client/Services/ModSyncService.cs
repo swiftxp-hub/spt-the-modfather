@@ -17,16 +17,16 @@ using UnityEngine;
 namespace SwiftXP.SPT.TheModfather.Client.Services;
 
 public class ModSyncService(
-    ISimpleSptLogger simpleSptLogger, 
+    ISimpleSptLogger simpleSptLogger,
     IBaseDirectoryService baseDirectoryService,
     ICheckUpdateService checkUpdateService,
     IDownloadUpdateService downloadUpdateService) : IModSyncService
 {
-    private bool _hasShownModUpdaterWindow = false;
+    private bool _hasShownModUpdaterWindow;
 
     private ModUpdaterUI? _modUpdaterWindow;
 
-    public void ShowUpdateNotification(Dictionary<string, ModSyncActionEnum> modSyncActions)
+    public void ShowUpdateNotification(Dictionary<string, ModSyncAction> modSyncActions)
     {
         if (_hasShownModUpdaterWindow)
             return;
@@ -36,22 +36,22 @@ public class ModSyncService(
             _hasShownModUpdaterWindow = true;
             ShowUpdateNotificationWindow(modSyncActions);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _hasShownModUpdaterWindow = false;
             simpleSptLogger.LogException(ex);
         }
     }
-    
-    public IEnumerator SyncMods(Action<Dictionary<string, ModSyncActionEnum>> onCompleted)
+
+    public IEnumerator SyncMods(Action<Dictionary<string, ModSyncAction>> onCompleted)
     {
-        Task<Dictionary<string, ModSyncActionEnum>> checkAsyncTask = checkUpdateService.CheckForUpdatesAsync();
+        Task<Dictionary<string, ModSyncAction>> checkAsyncTask = checkUpdateService.CheckForUpdatesAsync();
         yield return new WaitUntil(() => checkAsyncTask.IsCompleted);
 
         if (checkAsyncTask.IsFaulted)
         {
             simpleSptLogger.LogError($"Update check failed: {checkAsyncTask.Exception?.InnerException?.Message}");
-            
+
             onCompleted([]);
         }
         else
@@ -60,11 +60,11 @@ public class ModSyncService(
         }
     }
 
-    private void ShowUpdateNotificationWindow(Dictionary<string, ModSyncActionEnum> modSyncActions)
+    private void ShowUpdateNotificationWindow(Dictionary<string, ModSyncAction> modSyncActions)
     {
-        int countAdd = modSyncActions.Count(x => x.Value == ModSyncActionEnum.Add);
-        int countUpd = modSyncActions.Count(x => x.Value == ModSyncActionEnum.Update);
-        int countDel = modSyncActions.Count(x => x.Value == ModSyncActionEnum.Delete);
+        int countAdd = modSyncActions.Count(x => x.Value == ModSyncAction.Add);
+        int countUpd = modSyncActions.Count(x => x.Value == ModSyncAction.Update);
+        int countDel = modSyncActions.Count(x => x.Value == ModSyncAction.Delete);
 
         string message = $"Mod updates available...\n\n" +
             $"... {countAdd} files added\n" +
@@ -83,7 +83,7 @@ public class ModSyncService(
         );
     }
 
-    private void OnContinue(Dictionary<string, ModSyncActionEnum> modSyncActions)
+    private void OnContinue(Dictionary<string, ModSyncAction> modSyncActions)
     {
         GameObject gameObject = new("ModUpdaterUI");
 
@@ -98,7 +98,7 @@ public class ModSyncService(
         // Do nothing.
     }
 
-    public IEnumerator UpdateModsCoroutine(Dictionary<string, ModSyncActionEnum> modSyncActions)
+    public IEnumerator UpdateModsCoroutine(Dictionary<string, ModSyncAction> modSyncActions)
     {
         int actionCount = 0;
         int totalActions = modSyncActions.Count;
@@ -108,7 +108,7 @@ public class ModSyncService(
         yield return new WaitUntil(() => ensurePayloadTask.IsCompleted);
 
         bool success = true;
-        foreach(KeyValuePair<string, ModSyncActionEnum> modSyncAction in modSyncActions)
+        foreach (KeyValuePair<string, ModSyncAction> modSyncAction in modSyncActions)
         {
             if (modSyncAction.Key.Contains("..") || Path.IsPathRooted(modSyncAction.Key))
             {
@@ -117,11 +117,11 @@ public class ModSyncService(
                 actionCount++;
 
                 UpdateProgress(actionCount, totalActions);
-                
+
                 continue;
             }
 
-            if(modSyncAction.Value == ModSyncActionEnum.Add || modSyncAction.Value == ModSyncActionEnum.Update)
+            if (modSyncAction.Value == ModSyncAction.Add || modSyncAction.Value == ModSyncAction.Update)
             {
                 Task downloadTask = downloadUpdateService.DownloadAsync(Constants.DataDirectoryName, Constants.PayloadDirectoryName, modSyncAction.Key);
                 yield return new WaitUntil(() => downloadTask.IsCompleted);
@@ -156,12 +156,12 @@ public class ModSyncService(
             }
             else
             {
-                if(modSyncAction.Key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
+                if (modSyncAction.Key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase))
                 {
                     simpleSptLogger.LogError($"Warning: Blocked deletion of updater executable: {modSyncAction.Key}");
                     continue;
                 }
-                
+
                 try
                 {
                     string absolutePath = Path.GetFullPath(Path.Combine(baseDir, modSyncAction.Key));
@@ -182,11 +182,11 @@ public class ModSyncService(
             }
 
             actionCount++;
-            
+
             UpdateProgress(actionCount, totalActions);
         }
 
-        if(success)
+        if (success)
             yield return StartUpdaterAndQuit(baseDir);
     }
 
@@ -194,18 +194,18 @@ public class ModSyncService(
     {
         string payloadPath = GetPayloadPath(baseDir);
 
-        if(!Directory.Exists(payloadPath))
+        if (!Directory.Exists(payloadPath))
         {
             Directory.CreateDirectory(payloadPath);
             return;
         }
 
         IEnumerable<string> files = Directory.EnumerateFiles(payloadPath, "*", SearchOption.AllDirectories);
-        if(files.Any())
+        if (files.Any())
         {
             simpleSptLogger.LogError($"Payload path is not empty. Failed update? Emptying payload directory...");
 
-            foreach(string file in files)
+            foreach (string file in files)
             {
                 File.Delete(file);
             }
@@ -234,7 +234,7 @@ public class ModSyncService(
             yield break;
         }
 
-        string[] startOptions = 
+        string[] startOptions =
         [
             PluginInfoHelper.IsFikaHeadlessInstalled() ? "--silent true" : string.Empty,
             $"--processid {Process.GetCurrentProcess().Id}"
@@ -249,7 +249,7 @@ public class ModSyncService(
             CreateNoWindow = true
         };
 
-        try 
+        try
         {
             Process.Start(updaterStartInfo);
             Application.Quit();
@@ -260,11 +260,11 @@ public class ModSyncService(
         }
     }
 
-    private void CreateDeleteInstruction(string payloadDirectory, string relativeFilePath)
+    private static void CreateDeleteInstruction(string payloadDirectory, string relativeFilePath)
     {
         string normalizedPath = relativeFilePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
         string instructionPath = Path.Combine(payloadDirectory, normalizedPath + Constants.DeleteExtension);
-        
+
         string? directory = Path.GetDirectoryName(instructionPath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
@@ -274,12 +274,12 @@ public class ModSyncService(
         File.WriteAllText(instructionPath, string.Empty);
     }
 
-    private string GetPayloadPath(string baseDir)
+    private static string GetPayloadPath(string baseDir)
     {
         return Path.GetFullPath(Path.Combine(baseDir, Constants.DataDirectoryName, Constants.PayloadDirectoryName));
     }
 
-    private string GetPayloadPath(string baseDir, string relativePath)
+    private static string GetPayloadPath(string baseDir, string relativePath)
     {
         return Path.GetFullPath(Path.Combine(baseDir, Constants.DataDirectoryName, Constants.PayloadDirectoryName, relativePath));
     }
@@ -288,7 +288,7 @@ public class ModSyncService(
     {
         if (_modUpdaterWindow == null)
             return;
-        
+
         float progress = (float)current / total;
         _modUpdaterWindow.UpdateProgress(progress, $"Settling all family business ({current}/{total})...");
     }

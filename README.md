@@ -9,6 +9,8 @@
 
 This MOD facilitates the synchronization of Client-Mods (and, if you feel adventurous, other highly improbable things like configurations) between your SPT-Server and the SPT-Clients connecting to it. Both the Server and the Clients possess a configuration file, allowing you to designate exactly which files and directories are permitted to hitch a ride across the network.
 
+**Just to make it more clear: This mod synchronizes mods from your SPT Server to the Client(s), but does NOT download updates from the SPT Forge.**
+
 #### Requirements
 
 Practically none. If you can run SPT, you can run this.
@@ -19,17 +21,26 @@ The Modfather also supports synchronization with one or more FIKA Headless Clien
 
 #### Configuration
 
-To cause the configuration files to materialize into existence, you must launch the Server or EFT at least once.
+**Step 1:** To generate the configuration files, you must **launch the Server or EFT at least once**. (This causes the files to materialize into existence).
 
-The Server configuration can be adjusted here:
+**Step 2:** Edit the files.
 
-- /yourSPTServerFolder/SPT-4.0.11/SPT/user/mods/com.swiftxp.spt.themodfather/config/config.json
+The Server configuration can be found here:
+```
+/yourSPTServerFolder/SPT-4.0.11/SPT/user/mods/com.swiftxp.spt.themodfather/config/config.json
+```
 
-The Client and Headless-Client configuration can be adjusted here:
+The Client and Headless-Client configuration can be found here:
+```
+/yourSPTClientFolder/TheModfather_Data/config.json
+```
 
-- /yourSPTClientFolder/TheModfather_Data/config.json
+**IMPORTANT: How to write paths**
 
-Path specifications must always be relative to your SPT folder. E.g., "BepInEx/plugins". Absolute coordinates like "C:/SPT4-OMG/BepInEx/plugins" will not work (and may confuse the navigation computer).
+Path specifications must always be **relative** to your SPT folder.
+
+* **Correct:** `BepInEx/plugins`
+* **Wrong:** `C:/SPT4-OMG/BepInEx/plugins` (Do not use absolute paths or drive letters, it confuses the navigation computer).
 
 #### Planned features/changes
 
@@ -39,18 +50,25 @@ Path specifications must always be relative to your SPT folder. E.g., "BepInEx/p
 
 #### Installation
 
-Extract the **BepInEx** folder and the **SwiftXP.SPT.TheModfather.Updater.exe** file into the client. Extract the **SPT** folder into the server.
+**1. Client Installation:**
+Copy the content of the downloaded zip (the **BepInEx** folder and the **.exe** file) into your main game directory.
 
-Client:
-```
-- C:\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
-- C:\yourSPTclient\SwiftXP.SPT.TheModfather.Updater.exe
-```
+* The file `SwiftXP.SPT.TheModfather.Updater.exe` must be in the same folder as your `EscapeFromTarkov.exe`.
+* Resulting path check:
+    ```
+    - ...\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
+    - ...\yourSPTclient\SwiftXP.SPT.TheModfather.Updater.exe
+    ```
 
-Server:
-```
-- C:\yourSPTserver\SPT\user\mods\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Server.dll
-```
+**2. Server Installation:**
+Copy the content of the downloaded zip into your server directory.
+
+* Resulting path check:
+    ```
+    - ...\yourSPTserver\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
+    - ...\yourSPTserver\SwiftXP.SPT.TheModfather.Updater.exe
+    - ...\yourSPTserver\SPT\user\mods\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Server.dll
+    ```
 
 ### FAQ  
 *No FAQ available yet... the Deep Thought computer is still calculating the questions.*

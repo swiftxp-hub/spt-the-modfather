@@ -14,7 +14,7 @@ public class ServerFileInfoService(
     IServerConfigurationLoader serverConfigurationLoader,
     IBaseDirectoryService baseDirectoryService) : IServerFileInfoService
 {
-    public FileInfo? Get(string relativeFilePath)
+    public FileInfo? GetFileInfo(string relativeFilePath)
     {
         if (string.IsNullOrWhiteSpace(relativeFilePath))
             return null;
@@ -22,21 +22,21 @@ public class ServerFileInfoService(
         ServerConfiguration serverConfiguration = serverConfigurationLoader.LoadOrCreate();
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
         string requestedFullPath;
-        
-        try 
+
+        try
         {
             requestedFullPath = Path.GetFullPath(Path.Combine(baseDir, relativeFilePath));
         }
-        catch (Exception) 
+        catch (Exception)
         {
             return null;
         }
 
-        bool isAccessAllowed = serverConfiguration.SyncedPaths.Any(allowedSubPath => 
+        bool isAccessAllowed = serverConfiguration.SyncedPaths.Any(allowedSubPath =>
         {
             string allowedAbsolutePath = Path.GetFullPath(Path.Combine(baseDir, allowedSubPath));
-            
-            return requestedFullPath.StartsWith(allowedAbsolutePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) 
+
+            return requestedFullPath.StartsWith(allowedAbsolutePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
                 || requestedFullPath.Equals(allowedAbsolutePath, StringComparison.OrdinalIgnoreCase);
         });
 

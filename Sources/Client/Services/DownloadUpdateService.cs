@@ -25,10 +25,10 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
 
         byte[]? data;
 
-        try 
+        try
         {
             string urlPath = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/" + Uri.EscapeDataString(relativeFilePath.ToUnixStylePath());
-            
+
             RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
             data = await RequestHandler.GetDataAsync(urlPath);
 

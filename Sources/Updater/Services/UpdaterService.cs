@@ -9,9 +9,9 @@ public class UpdaterService(ILogService logService, IProcessWatcher processWatch
     private const string PayloadPath = "Payload";
     private const string DeleteInstructionSuffix = ".delete";
 
-    public async Task<bool> Update()
+    public async Task<bool> UpdateModsAsync()
     {
-        logService.Write("Starting update...");
+        logService.WriteMessage("Starting update...");
 
         try
         {
@@ -23,7 +23,7 @@ public class UpdaterService(ILogService logService, IProcessWatcher processWatch
                     deleteService.ProcessDeleteInstructions(basePath!, payloadPath!, DeleteInstructionSuffix);
                     moverService.MoveFiles(basePath!, payloadPath!);
 
-                    logService.Write("Update completed");
+                    logService.WriteMessage("Update completed");
 
                     await CleanUpPayloadDirectory(payloadPath!);
 
@@ -33,10 +33,10 @@ public class UpdaterService(ILogService logService, IProcessWatcher processWatch
         }
         catch (Exception ex)
         {
-            logService.Error("Unexpected error occured", ex);
+            logService.WriteError("Unexpected error occured", ex);
         }
 
-        logService.Write("Update failed");
+        logService.WriteMessage("Update failed");
 
         return false;
     }
@@ -48,7 +48,7 @@ public class UpdaterService(ILogService logService, IProcessWatcher processWatch
 
         if (!File.Exists(EscapeFromTarkovExe))
         {
-            logService.Error($"{EscapeFromTarkovExe} could not be found. Make sure you are running the updater from your SPT folder. Exiting...");
+            logService.WriteError($"{EscapeFromTarkovExe} could not be found. Make sure you are running the updater from your SPT folder. Exiting...");
 
             return false;
         }
@@ -58,7 +58,7 @@ public class UpdaterService(ILogService logService, IProcessWatcher processWatch
 
         if (!Directory.Exists(payloadPath))
         {
-            logService.Error("Payload directory could not be found. Something went wrong. Exiting...");
+            logService.WriteError("Payload directory could not be found. Something went wrong. Exiting...");
 
             return false;
         }
@@ -70,11 +70,11 @@ public class UpdaterService(ILogService logService, IProcessWatcher processWatch
     {
         await Task.Delay(200);
 
-        logService.Write($"Cleaning payload directory: {payloadPath}");
+        logService.WriteMessage($"Cleaning payload directory: {payloadPath}");
 
         Directory.Delete(payloadPath, true);
         Directory.CreateDirectory(payloadPath);
 
-        logService.Write($"Cleaned payload directory: {payloadPath}");
+        logService.WriteMessage($"Cleaned payload directory: {payloadPath}");
     }
 }

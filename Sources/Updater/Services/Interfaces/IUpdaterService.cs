@@ -2,5 +2,5 @@
 
 public interface IUpdaterService
 {
-    Task<bool> Update();
+    Task<bool> UpdateModsAsync();
 }

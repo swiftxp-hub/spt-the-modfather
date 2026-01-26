@@ -4,5 +4,5 @@ namespace SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 
 public interface IServerFileInfoService
 {
-    FileInfo? Get(string relativeFilePath);
+    FileInfo? GetFileInfo(string relativeFilePath);
 }

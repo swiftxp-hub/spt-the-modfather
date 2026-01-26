@@ -2,11 +2,11 @@
 
 public interface ILogService
 {
-    void Error(string message, Exception ex);
-
-    void Error(string message);
-
     void StartNewFile();
 
-    void Write(string message);
+    void WriteError(string message, Exception ex);
+
+    void WriteError(string message);
+
+    void WriteMessage(string message);
 }

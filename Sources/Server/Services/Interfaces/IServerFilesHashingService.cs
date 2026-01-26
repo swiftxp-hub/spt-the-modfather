@@ -4,5 +4,5 @@ namespace SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 
 public interface IServerFilesHashingService
 {
-    Dictionary<string, string> Get();
+    Dictionary<string, string> GetServerFileHashes();
 }

@@ -11,18 +11,18 @@ namespace SwiftXP.SPT.TheModfather.Updater
         [STAThread]
         static async Task Main()
         {
-            ILogService logService = new LogService();
-            IProcessWatcher processWatcher = new ProcessWatcher(logService);
-            IDeleteService deleteService = new DeleteService(logService);
-            IMoverService moverService = new MoverService(logService);
+            LogService logService = new();
+            ProcessWatcher processWatcher = new(logService);
+            DeleteService deleteService = new(logService);
+            MoverService moverService = new(logService);
 
-            IUpdaterService updaterService = new UpdaterService(logService, processWatcher, deleteService, moverService);
+            UpdaterService updaterService = new(logService, processWatcher, deleteService, moverService);
 
-            if(CommandLineParameterService.IsSilent())
+            if (CommandLineParameterService.IsSilent())
             {
-                logService.Write("Silent mode activated");
+                logService.WriteMessage("Silent mode activated");
 
-                await updaterService.Update();
+                await updaterService.UpdateModsAsync();
             }
             else
             {

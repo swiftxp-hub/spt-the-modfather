@@ -11,37 +11,37 @@ namespace SwiftXP.SPT.TheModfather.Server.Configurations;
 [Injectable(InjectionType.Scoped)]
 public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> logger) : IServerConfigurationLoader
 {
-    private static readonly string _filePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, Constants.ServerConfigurationPath));
+    private static readonly string s_filePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, Constants.ServerConfigurationPath));
 
-    private static readonly JsonSerializerOptions _options = new()
+    private static readonly JsonSerializerOptions s_options = new()
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     public ServerConfiguration LoadOrCreate()
     {
-        if (!File.Exists(_filePath))
+        if (!File.Exists(s_filePath))
         {
-            var defaultConfig = new ServerConfiguration();
-            Save(defaultConfig); 
+            ServerConfiguration defaultConfig = new();
+            Save(defaultConfig);
 
             return defaultConfig;
         }
 
         try
         {
-            string jsonString = File.ReadAllText(_filePath);
-            var config = JsonSerializer.Deserialize<ServerConfiguration>(jsonString, _options);
-            
+            string jsonString = File.ReadAllText(s_filePath);
+            ServerConfiguration? config = JsonSerializer.Deserialize<ServerConfiguration>(jsonString, s_options);
+
             return config ?? new ServerConfiguration();
         }
         catch (JsonException)
         {
-            logger.Error($"[ERROR] Configuration is invalid (syntax-error): {_filePath}");
+            logger.Error($"[ERROR] Configuration is invalid (syntax-error): {s_filePath}");
 
             throw;
         }
@@ -49,15 +49,15 @@ public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> log
 
     public static void Save(ServerConfiguration config)
     {
-        string? directory = Path.GetDirectoryName(_filePath);
-        
+        string? directory = Path.GetDirectoryName(s_filePath);
+
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
-        string jsonString = JsonSerializer.Serialize(config, _options);
+        string jsonString = JsonSerializer.Serialize(config, s_options);
 
-        File.WriteAllText(_filePath, jsonString);
+        File.WriteAllText(s_filePath, jsonString);
     }
 }

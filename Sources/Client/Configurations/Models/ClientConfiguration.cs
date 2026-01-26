@@ -1,3 +1,5 @@
+using System;
+
 namespace SwiftXP.SPT.TheModfather.Client.Configurations.Models;
 
 public sealed record ClientConfiguration
@@ -36,11 +38,11 @@ public sealed record ClientConfiguration
     {
         if (paths is null)
             return [];
-        
-        return System.Array.ConvertAll(paths, p => 
+
+        return Array.ConvertAll(paths, p =>
         {
-            var path = p.Replace('\\', '/');
-            return (path.StartsWith("./") ? path.Substring(2) : path).Trim().Trim('/');
+            string path = p.Replace('\\', '/');
+            return (path.StartsWith("./", StringComparison.OrdinalIgnoreCase) ? path.Substring(2) : path).Trim().Trim('/');
         });
     }
 }

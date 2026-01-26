@@ -9,17 +9,17 @@ public class ProcessWatcher(ILogService logService) : IProcessWatcher
     {
         TimeSpan timeout = TimeSpan.FromSeconds(60);
 
-        logService.Write("Waiting for EFT-Process to be closed...");
+        logService.WriteMessage("Waiting for EFT-Process to be closed...");
 
         int? processId = GetEftProcessId();
         if (!processId.HasValue)
         {
-            logService.Write("No EFT-Process ID found via Args or Name. Assuming closed");
-            
+            logService.WriteMessage("No EFT-Process ID found via Args or Name. Assuming closed");
+
             return true;
         }
 
-        logService.Write($"EFT-Process ID '{processId}' found. Waiting max {timeout.TotalSeconds}s...");
+        logService.WriteMessage($"EFT-Process ID '{processId}' found. Waiting max {timeout.TotalSeconds}s...");
 
         try
         {
@@ -48,7 +48,7 @@ public class ProcessWatcher(ILogService logService) : IProcessWatcher
         }
         catch (Exception ex)
         {
-            logService.Error("Unexpected error while waiting for process exit", ex);
+            logService.WriteError("Unexpected error while waiting for process exit", ex);
 
             return false;
         }
@@ -60,21 +60,21 @@ public class ProcessWatcher(ILogService logService) : IProcessWatcher
 
         if (eftProcessId.HasValue)
         {
-            logService.Write($"EFT-Process ID from cmd-parameter: {eftProcessId}");
+            logService.WriteMessage($"EFT-Process ID from cmd-parameter: {eftProcessId}");
             return eftProcessId;
         }
 
         Process[] tarkovProcesses = Process.GetProcessesByName("EscapeFromTarkov");
         if (tarkovProcesses.Length > 0)
         {
-            logService.Write($"EFT-Process ID from GetProcessesByName: {tarkovProcesses[0].Id}");
+            logService.WriteMessage($"EFT-Process ID from GetProcessesByName: {tarkovProcesses[0].Id}");
             return tarkovProcesses[0].Id;
         }
 
         Process[] beProcesses = Process.GetProcessesByName("EscapeFromTarkov_BE");
         if (beProcesses.Length > 0)
         {
-            logService.Write($"EFT-Process ID from GetProcessesByName (BE): {beProcesses[0].Id}");
+            logService.WriteMessage($"EFT-Process ID from GetProcessesByName (BE): {beProcesses[0].Id}");
             return beProcesses[0].Id;
         }
 
