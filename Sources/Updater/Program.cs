@@ -11,8 +11,6 @@ namespace SwiftXP.SPT.TheModfather.Updater
         [STAThread]
         static async Task Main()
         {
-            ApplicationConfiguration.Initialize();
-
             ILogService logService = new LogService();
             IProcessWatcher processWatcher = new ProcessWatcher(logService);
             IDeleteService deleteService = new DeleteService(logService);
@@ -28,6 +26,7 @@ namespace SwiftXP.SPT.TheModfather.Updater
             }
             else
             {
+                ApplicationConfiguration.Initialize();
                 Application.Run(new MainWindow(updaterService));
             }
         }
