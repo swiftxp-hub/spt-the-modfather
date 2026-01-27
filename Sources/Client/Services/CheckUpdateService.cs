@@ -51,7 +51,7 @@ public class CheckUpdateService(
             foreach (KeyValuePair<string, string> serverEntry in serverFileHashes)
             {
                 if (!clientFileHashes.ContainsKey(serverEntry.Key)
-                    && !IsIgnoredFile(serverEntry.Key)
+                    && !IsFikaHeadlessFile(serverEntry.Key)
                     && IsHeadlessWhitelisted(serverEntry, baseDirectory, clientConfiguration.HeadlessWhitelist))
                 {
                     result.Add(serverEntry.Key, ModSyncAction.Add);
@@ -64,8 +64,8 @@ public class CheckUpdateService(
 
                 if (!existsOnServer)
                 {
-                    if (!IsIgnoredFile(clientEntry.Key)
-                        && IsModFile(clientEntry.Key)) // Prevent self-delete
+                    if (!IsFikaHeadlessFile(clientEntry.Key)
+                        && !IsModFile(clientEntry.Key)) // Prevent self-delete
                     {
                         result.Add(clientEntry.Key, ModSyncAction.Delete);
                     }
@@ -128,7 +128,7 @@ public class CheckUpdateService(
             || key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsIgnoredFile(string key)
+    private static bool IsFikaHeadlessFile(string key)
     {
         return key.EndsWith(Constants.FikaHeadlessDll, StringComparison.OrdinalIgnoreCase)
             || key.EndsWith(Constants.LicenseHeadlessMd, StringComparison.OrdinalIgnoreCase);

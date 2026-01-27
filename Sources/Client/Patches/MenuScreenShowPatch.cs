@@ -11,7 +11,9 @@ public class MenuScreenShowPatch : ModulePatch
         AccessTools.FirstMethod(typeof(MenuScreen), x => x.Name == nameof(MenuScreen.Show));
 
     [PatchPostfix]
-    public static void PatchPostfix(MenuScreen instance)
+#pragma warning disable CA1707 // Identifiers should not contain underscores
+    public static void PatchPostfix(MenuScreen __instance)
+#pragma warning restore CA1707 // Identifiers should not contain underscores
     {
         if (Plugin.ModSyncActions != null && Plugin.ModSyncActions.Count > 0)
             Plugin.ModSyncService!.ShowUpdateNotification(Plugin.ModSyncActions);
