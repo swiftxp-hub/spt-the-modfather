@@ -1,4 +1,6 @@
-﻿namespace SwiftXP.SPT.TheModfather.Updater
+﻿using SwiftXP.SPT.Common.Runtime;
+
+namespace SwiftXP.SPT.TheModfather.Updater
 {
     partial class MainWindow
     {
@@ -42,7 +44,7 @@
             this.HeaderText.Name = "HeaderText";
             this.HeaderText.Size = new Size(307, 29);
             this.HeaderText.TabIndex = 0;
-            this.HeaderText.Text = "THE MODFATHER (v0.2.0)";
+            this.HeaderText.Text = $"THE MODFATHER ({AppMetadata.Version})";
             // 
             // StatusText
             // 

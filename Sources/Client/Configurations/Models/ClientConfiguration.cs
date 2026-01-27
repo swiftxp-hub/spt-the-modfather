@@ -1,10 +1,11 @@
 using System;
+using SwiftXP.SPT.Common.Runtime;
 
 namespace SwiftXP.SPT.TheModfather.Client.Configurations.Models;
 
 public sealed record ClientConfiguration
 {
-    public string ConfigVersion { get; set; } = Constants.Version;
+    public string ConfigVersion { get; set; } = AppMetadata.Version;
 
     private string[] _excludedPaths = [
         "BepInEx/patchers/spt-prepatch.dll",

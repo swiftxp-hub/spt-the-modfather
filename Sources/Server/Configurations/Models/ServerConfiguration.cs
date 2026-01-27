@@ -1,10 +1,11 @@
 using System;
+using SwiftXP.SPT.Common.Runtime;
 
 namespace SwiftXP.SPT.TheModfather.Server.Configurations.Models;
 
 public sealed record ServerConfiguration
 {
-    public string ConfigVersion { get; set; } = Constants.Version;
+    public string ConfigVersion { get; set; } = AppMetadata.Version;
 
     private string[] _syncedPaths = [
         "SwiftXP.SPT.TheModfather.Updater.exe",

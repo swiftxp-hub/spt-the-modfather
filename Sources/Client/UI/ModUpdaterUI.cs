@@ -9,7 +9,7 @@ public class ModUpdaterUI : MonoBehaviour
     private Rect windowRect = new(0, 0, 600, 220);
 
     private const float BAR_HEIGHT = 40f;
-    private const int HEADER_SIZE = 20;
+    private const int HEADER_SIZE = 18;
     private const int STATUS_SIZE = 12;
     private const int FOOTER_SIZE = 12;
 

@@ -2,12 +2,10 @@ namespace SwiftXP.SPT.TheModfather.Server;
 
 public static class Constants
 {
-    public const string Version = "0.2.0";
-
     public const string RoutePrefix = "/theModfather";
 
     public const string RouteGetHashes = "/getFileHashes";
-    
+
     public const string RouteGetFile = "/getFile";
 
     public const string RouteGetServerConfiguration = "/getServerConfiguration";
