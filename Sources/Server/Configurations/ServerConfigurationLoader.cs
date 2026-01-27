@@ -26,6 +26,8 @@ public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> log
     {
         if (!File.Exists(s_filePath))
         {
+            logger.Info("Server-Configuration for 'The Modfather' missing. Creating default configuration...");
+
             ServerConfiguration defaultConfig = new();
             Save(defaultConfig);
 

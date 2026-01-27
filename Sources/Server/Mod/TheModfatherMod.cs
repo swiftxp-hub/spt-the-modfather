@@ -4,6 +4,7 @@ using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.External;
 using SPTarkov.Server.Core.Models.Utils;
 using SwiftXP.SPT.TheModfather.Http.Interfaces;
+using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
 
 namespace SwiftXP.SPT.TheModfather.Server;
 
@@ -11,7 +12,8 @@ namespace SwiftXP.SPT.TheModfather.Server;
 
 #pragma warning disable CS9113 // Parameter is unread.
 public class TheModfatherMod(ISptLogger<TheModfatherMod> logger,
-    IModHttpListener httpListener)
+    IModHttpListener httpListener,
+    IServerConfigurationLoader serverConfigurationLoader)
 #pragma warning restore CS9113 // Parameter is unread.
     : IPreSptLoadModAsync
 {
@@ -19,6 +21,7 @@ public class TheModfatherMod(ISptLogger<TheModfatherMod> logger,
     public async Task PreSptLoadAsync()
 #pragma warning restore CS1998 // This async method lacks 'await' operators.
     {
-        
+        // Force creation of server-configuration on server start if not existing.
+        serverConfigurationLoader.LoadOrCreate();
     }
 }
