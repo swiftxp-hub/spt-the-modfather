@@ -24,7 +24,7 @@ jobs:
         dotnet-version: '9.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore Sources/Updater/SwiftXP.SPT.TheModfather.Updater.csproj
+      run: dotnet restore Sources/Updater/SwiftXP.SPT.TheModfather.Updater.csproj -r win-x64
 
     - name: Publish Updater
       run: dotnet publish Sources/Updater/SwiftXP.SPT.TheModfather.Updater.csproj --configuration Release --no-restore -r win-x64 -p:Version=${{ github.event.inputs.version }} -o ./publish/
