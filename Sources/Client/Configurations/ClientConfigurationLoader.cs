@@ -46,30 +46,6 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
         }
     }
 
-    private void MigrateIfNeeded(ClientConfiguration config)
-    {
-        if (!Version.TryParse(config.ConfigVersion, out Version? version))
-        {
-            version = new Version(0, 0, 0);
-        }
-
-        if (version < new Version(0, 3, 0))
-        {
-            simpleSptLogger.LogInfo("Migrating client configuration to latest version...");
-
-            config.ExcludedPaths =
-                [.. config.ExcludedPaths.Select(x => !Path.HasExtension(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
-
-            config.HeadlessWhitelist =
-                [.. config.HeadlessWhitelist.Select(x => !Path.HasExtension(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
-
-            config.ConfigVersion = AppMetadata.Version;
-            Save(config);
-
-            simpleSptLogger.LogInfo($"Client configuration migrated to version {AppMetadata.Version}");
-        }
-    }
-
     public static void Save(ClientConfiguration config)
     {
         string? directory = Path.GetDirectoryName(s_filePath);
@@ -82,5 +58,58 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
         string jsonString = JsonConvert.SerializeObject(config, s_options);
 
         File.WriteAllText(s_filePath, jsonString);
+    }
+
+    private void MigrateIfNeeded(ClientConfiguration config)
+    {
+        if (!Version.TryParse(config.ConfigVersion, out Version? version))
+        {
+            version = new Version(0, 0, 0);
+        }
+
+        if (version < new Version(0, 3, 0))
+        {
+            simpleSptLogger.LogInfo("Migrating client configuration to latest version...");
+
+            config.ExcludedPaths =
+                [.. config.ExcludedPaths.Select(x => !LooksLikeAFile(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
+
+            config.HeadlessWhitelist =
+                [.. config.HeadlessWhitelist.Select(x => !LooksLikeAFile(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
+
+            config.ConfigVersion = AppMetadata.Version;
+            Save(config);
+
+            simpleSptLogger.LogInfo($"Client configuration migrated to version {AppMetadata.Version}");
+        }
+    }
+
+    private static bool LooksLikeAFile(string path)
+    {
+        string[] validExtensions =
+        [
+            ".7z", ".a", ".apk", ".arj", ".asm", ".asp", ".aspx", ".assets", ".audiobakedata",
+            ".avi", ".bak", ".bash", ".bat", ".bin", ".bmp", ".br", ".browser", ".bundle",
+            ".bundles", ".bz2", ".bytes", ".c", ".cab", ".cat", ".cer", ".cfg", ".cgi",
+            ".class", ".cmd", ".com", ".conf", ".config", ".cpp", ".cpl", ".crt", ".cs",
+            ".css", ".csv", ".cur", ".dat", ".db", ".deb", ".delta", ".desktop", ".diff",
+            ".dll", ".dmg", ".doc", ".docx", ".doorstop_version", ".drv", ".dump", ".env",
+            ".err", ".exe", ".flv", ".gif", ".gz", ".h", ".hpp", ".htm", ".html", ".ico",
+            ".img", ".inf", ".info", ".ini", ".iso", ".jar", ".java", ".jpeg", ".jpg",
+            ".js", ".json", ".jsonc", ".key", ".ko", ".lib", ".linux", ".lnk", ".lock",
+            ".log", ".lua", ".m3u", ".m4a", ".manifest", ".map", ".md", ".mdb", ".mkv",
+            ".mov", ".mp3", ".mp4", ".mpeg", ".mpg", ".msc", ".msi", ".o", ".obj", ".odt",
+            ".ogg", ".old", ".pages", ".patch", ".pcl", ".pdb", ".pdf", ".pem", ".pfx",
+            ".php", ".pid", ".pkg", ".pl", ".pm", ".png", ".pot", ".ppt", ".pptx", ".prefab",
+            ".ps1", ".pst", ".py", ".pyc", ".rar", ".rb", ".rc", ".reg", ".resource",
+            ".ress", ".rpm", ".rst", ".rtf", ".run", ".sav", ".scr", ".service", ".sh",
+            ".sharedassets", ".skin_mesh", ".so", ".spt-bak", ".sql", ".svg", ".swf",
+            ".sys", ".tar", ".textures", ".tga", ".tgz", ".tiff", ".tmp", ".toml", ".ts",
+            ".ttf", ".txt", ".vbs", ".wav", ".webm", ".webp", ".wma", ".wmv", ".woff",
+            ".woff2", ".xls", ".xlsx", ".xml", ".xrageo", ".xramap", ".xz", ".yaml",
+            ".yml", ".zip", ".zsh"
+        ];
+
+        return validExtensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
     }
 }

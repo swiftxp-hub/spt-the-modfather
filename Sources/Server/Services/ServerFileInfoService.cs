@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using System.Linq;
+using Microsoft.Extensions.FileSystemGlobbing;
 using SPTarkov.DI.Annotations;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
@@ -21,26 +21,22 @@ public class ServerFileInfoService(
 
         ServerConfiguration serverConfiguration = serverConfigurationLoader.LoadOrCreate();
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
-        string requestedFullPath;
 
+        Matcher matcher = new(StringComparison.OrdinalIgnoreCase);
+        matcher.AddIncludePatterns(serverConfiguration.SyncedPaths);
+
+        bool isAccessAllowed = matcher.Match(relativeFilePath).HasMatches;
+        if (!isAccessAllowed)
+        {
+            return null;
+        }
+
+        string requestedFullPath;
         try
         {
             requestedFullPath = Path.GetFullPath(Path.Combine(baseDir, relativeFilePath));
         }
         catch (Exception)
-        {
-            return null;
-        }
-
-        bool isAccessAllowed = serverConfiguration.SyncedPaths.Any(allowedSubPath =>
-        {
-            string allowedAbsolutePath = Path.GetFullPath(Path.Combine(baseDir, allowedSubPath));
-
-            return requestedFullPath.StartsWith(allowedAbsolutePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-                || requestedFullPath.Equals(allowedAbsolutePath, StringComparison.OrdinalIgnoreCase);
-        });
-
-        if (!isAccessAllowed)
         {
             return null;
         }
