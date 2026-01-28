@@ -45,11 +45,11 @@ The client and headless-client configuration can be found here:
 
 Path specifications must always be **relative** to your SPT folder.
 
-* **Correct:** `BepInEx/plugins`
-* **Wrong:** `C:/SPT4-OMG/BepInEx/plugins`  
+* **Correct:** `BepInEx/plugins/**/*`
+* **Wrong:** `C:/SPT4-OMG/BepInEx/plugins/**/*`  
   (Do not use absolute paths or drive letters, it confuses the navigation computer).
 
-It is also possible to use globbing patterns to specify paths. For example, `BepInEx/plugins/**/*.dll` will synchronize all `.dll` files in the plugins folder and all its subdirectories.
+Please use globbing patterns to specify paths. For example, `BepInEx/plugins/**/*.dll` will synchronize all `.dll` files in the plugins folder and all its subdirectories.
 
 **For more information on the server- and client-configuration, please see the corresponding sections.**
 
@@ -70,7 +70,9 @@ Copy the content of the downloaded zip (the **BepInEx** folder and the **.exe** 
 * Resulting path check:
     ```
     - ...\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
+    - ...\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.LICENSES.txt
     - ...\yourSPTclient\SwiftXP.SPT.TheModfather.Updater.exe
+    - ...\yourSPTclient\SwiftXP.SPT.TheModfather.Updater.LICENSES.txt
     ```
 
 ---
@@ -81,8 +83,11 @@ Copy the content of the downloaded zip into your server directory.
 * Resulting path check:
     ```
     - ...\yourSPTserver\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
+    - ...\yourSPTserver\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.LICENSES.txt
     - ...\yourSPTserver\SwiftXP.SPT.TheModfather.Updater.exe
+    - ...\yourSPTserver\SwiftXP.SPT.TheModfather.Updater.LICENSES.txt
     - ...\yourSPTserver\SPT\user\mods\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Server.dll
+    - ...\yourSPTserver\SPT\user\mods\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Server.LICENSES.txt
     ```
 
 ---
@@ -102,19 +107,19 @@ The server configuration can be found here:
 
 ---
 
-The default configuration for the server is (v0.2.2):
+The default configuration for the server is (v0.3.0):
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "0.3.0",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
-    "BepInEx/patchers",
-    "BepInEx/plugins"
+    "BepInEx/patchers/**/*",
+    "BepInEx/plugins/**/*"
   ],
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt"
+    "BepInEx/plugins/spt/**/*"
   ]
 }
 ```
@@ -128,12 +133,12 @@ The default configuration for the server is (v0.2.2):
   It ensures the mod knows which version of reality it is currently operating in.
 
 * **SyncedPaths**:  
-  These are the directories or specific files that will be **sent** to the connecting clients. Globbing patterns are also supported.
-  * If you define a folder (e.g., `BepInEx/plugins`), **all** contents within that folder will be synchronized recursively.
+  These are the directories or specific files that will be **sent** to the connecting clients. Globbing patterns are supported (and necessary).
+  * If you define a folder (e.g., `BepInEx/plugins/**/*`), **all** contents within that folder will be synchronized recursively.
   * Remember: Paths are relative to the SPT root folder.
 
 * **ExcludedPaths**:  
-  These are specific exceptions to the `SyncedPaths`. Files or folders listed here will **NOT** be sent, even if they reside inside a synced folder. Globbing patterns are also supported.
+  These are specific exceptions to the `SyncedPaths`. Files or folders listed here will **NOT** be sent, even if they reside inside a synced folder. Globbing patterns are supported (and necessary).
   * This is crucial for preventing the overwriting of client-specific files (like `spt-prepatch.dll` or the `spt` folder itself).
 
 **Important Note:** Ensure you maintain valid JSON syntax (commas at the end of lines, quotes around strings). If the JSON is invalid, the universe might implode (mild exaggeration, but the mod won't load).
@@ -150,16 +155,16 @@ Simply add `"BepInEx/config"` to your `SyncedPaths`.
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "0.3.0",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
-    "BepInEx/patchers",
-    "BepInEx/plugins",
-    "BepInEx/config"
+    "BepInEx/patchers/**/*",
+    "BepInEx/plugins/**/*",
+    "BepInEx/config/**/*"
   ],
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt"
+    "BepInEx/plugins/spt/**/*"
   ]
 }
 ```
@@ -168,16 +173,16 @@ You can also sync only specific config files (e.g. the settings for Acid's Bot P
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "0.3.0",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
-    "BepInEx/patchers",
-    "BepInEx/plugins",
+    "BepInEx/patchers/**/*",
+    "BepInEx/plugins/**/*",
     "BepInEx/config/com.acidphantasm.botplacementsystem.cfg"
   ],
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt"
+    "BepInEx/plugins/spt/**/*"
   ]
 }
 ```
@@ -192,9 +197,9 @@ In this example, we only sync one specific mod folder:
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "0.3.0",
   "SyncedPaths": [
-    "BepInEx/plugins/SamSWAT-TimeWeatherChanger"
+    "BepInEx/plugins/SamSWAT-TimeWeatherChanger/**/*"
   ],
   "ExcludedPaths": []
 }
@@ -211,30 +216,14 @@ You want to sync all configs (`BepInEx/config`), EXCEPT one specific file that c
   "ConfigVersion": "0.2.2",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
-    "BepInEx/plugins",
-    "BepInEx/config"
+    "BepInEx/plugins/**/*",
+    "BepInEx/config/**/*"
   ],
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt",
+    "BepInEx/plugins/spt/**/*",
     "BepInEx/config/vogon.poetry.cfg"
   ]
-}
-```
-
----
-
-**Scenario 4: The "Globetrotter" (using globbing patterns)**
-
-You want to sync all `.dll` files from the `BepInEx/plugins` folder and all its subdirectories, but nothing else from that folder.
-
-```json
-{
-  "ConfigVersion": "0.2.2",
-  "SyncedPaths": [
-    "BepInEx/plugins/**/*.dll"
-  ],
-  "ExcludedPaths": []
 }
 ```
 
@@ -253,21 +242,21 @@ The client configuration can be found here:
 
 ---
 
-The default configuration for the client is (v0.2.2):
+The default configuration for the client is (v0.3.0):
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "0.3.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt"
+    "BepInEx/plugins/spt/**/*"
   ],
   "HeadlessWhitelist": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
-    "BepInEx/plugins/com.swiftxp.spt.themodfather",
-    "BepInEx/plugins/acidphantasm-botplacementsystem",
-    "BepInEx/plugins/DrakiaXYZ-Waypoints",
-    "BepInEx/plugins/SAIN",
+    "BepInEx/plugins/com.swiftxp.spt.themodfather/**/*",
+    "BepInEx/plugins/acidphantasm-botplacementsystem/**/*",
+    "BepInEx/plugins/DrakiaXYZ-Waypoints/**/*",
+    "BepInEx/plugins/SAIN/**/*",
     "BepInEx/plugins/DrakiaXYZ-BigBrain.dll",
     "BepInEx/plugins/Tyfon.UIFixes.dll",
     "BepInEx/plugins/Tyfon.UIFixes.Net.dll"
@@ -295,7 +284,7 @@ By using `ExcludedPaths`, you tell the synchronization process: "I don't care wh
   It ensures the mod knows which version of reality it is currently operating in.
 
 * **ExcludedPaths**:  
-  Files or folders listed here will NOT be touched, even if the server tries to update, add, or delete them. Globbing patterns are also supported.
+  Files or folders listed here will NOT be touched, even if the server tries to update, add, or delete them. Globbing patterns are supported (and necessary).
 
   * Use Case: This allows you to keep client-side-only mods that the server doesn't have, without the sync process deleting them as "alien debris".
 
@@ -319,10 +308,10 @@ You exclude the specific config file so the server can't overwrite your beautifu
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "0.3.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt",
+    "BepInEx/plugins/spt/**/*",
     "BepInEx/config/com.amands.graphics.cfg"
   ],
   "HeadlessWhitelist": [...]
@@ -337,11 +326,11 @@ You love the Audio Accessibility Indicators mod, but the server doesn't have it 
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "0.3.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt",
-    "BepInEx/plugins/acidphantasm-accessibilityindicators",
+    "BepInEx/plugins/spt/**/*",
+    "BepInEx/plugins/acidphantasm-accessibilityindicators/**/*",
     "BepInEx/config/com.acidphantasm.accessibilityindicators.cfg"
   ],
   "HeadlessWhitelist": [...]
@@ -363,21 +352,21 @@ The Fika headless client configuration can be found here:
 
 ---
 
-The default configuration is (v0.2.2):
+The default configuration is (v0.3.0):
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "0.3.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt"
+    "BepInEx/plugins/spt/**/*"
   ],
   "HeadlessWhitelist": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
-    "BepInEx/plugins/com.swiftxp.spt.themodfather",
-    "BepInEx/plugins/acidphantasm-botplacementsystem",
-    "BepInEx/plugins/DrakiaXYZ-Waypoints",
-    "BepInEx/plugins/SAIN",
+    "BepInEx/plugins/com.swiftxp.spt.themodfather/**/*",
+    "BepInEx/plugins/acidphantasm-botplacementsystem/**/*",
+    "BepInEx/plugins/DrakiaXYZ-Waypoints/**/*",
+    "BepInEx/plugins/SAIN/**/*",
     "BepInEx/plugins/DrakiaXYZ-BigBrain.dll",
     "BepInEx/plugins/Tyfon.UIFixes.dll",
     "BepInEx/plugins/Tyfon.UIFixes.Net.dll"
@@ -402,7 +391,9 @@ The default configuration is (v0.2.2):
   
   Many client-side mods are not required on a headless client. It is generally recommended to avoid installing unnecessary client mods in a headless environment.  
 
-  The default whitelist already contains mods that are essential for the Fika headless client to function correctly (e.g., SAIN, to ensure AI improvements are properly calculated).  
+  The default whitelist already contains mods that are essential for the Fika headless client to function correctly (e.g., SAIN, to ensure AI improvements are properly calculated).
+
+  Globbing patterns are supported (and necessary).
 
 **Important Note:** Ensure you maintain valid JSON syntax (commas at the end of lines, quotes around strings). If the JSON is invalid, the universe might implode (mild exaggeration, but the mod won't load).
 
