@@ -17,9 +17,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/../../../spt-common/Runtime/**/*.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../../../spt-common/Services/**/*.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../../../spt-common/Extensions/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Runtime/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Services/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Extensions/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>

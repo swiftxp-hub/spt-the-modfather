@@ -1,0 +1,3 @@
+[submodule "Sources/Common"]
+	path = Sources/Common
+	url = git@github.com:swiftxp-hub/spt-common.git

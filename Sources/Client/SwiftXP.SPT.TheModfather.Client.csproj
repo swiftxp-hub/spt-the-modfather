@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/../../../spt-common/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
