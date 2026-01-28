@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SPT.Common.Http;
-using SwiftXP.SPT.Common.Extensions;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
@@ -124,7 +123,7 @@ public class CheckUpdateService(
 
     private static bool IsModFile(string key)
     {
-        return key.ToUnixStylePath().EndsWith(Constants.ModDllPath, StringComparison.OrdinalIgnoreCase)
+        return key.EndsWith(Constants.ModDllPath, StringComparison.OrdinalIgnoreCase)
             || key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase);
     }
 

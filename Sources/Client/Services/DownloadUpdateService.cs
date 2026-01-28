@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using SPT.Common.Http;
-using SwiftXP.SPT.Common.Extensions;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Services.Interfaces;
@@ -27,7 +26,7 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
 
         try
         {
-            string urlPath = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/" + Uri.EscapeDataString(relativeFilePath.ToUnixStylePath());
+            string urlPath = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/" + Uri.EscapeDataString(relativeFilePath);
 
             RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
             data = await RequestHandler.GetDataAsync(urlPath);
