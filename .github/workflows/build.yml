@@ -23,6 +23,9 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
+    - name: Install License Tool
+      run: dotnet tool install --global dotnet-project-licenses
+
     - name: Restore dependencies
       run: dotnet restore Sources/Updater/SwiftXP.SPT.TheModfather.Updater.csproj -r win-x64
 

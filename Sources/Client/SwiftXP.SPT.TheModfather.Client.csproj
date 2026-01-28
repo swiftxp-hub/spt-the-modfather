@@ -20,12 +20,18 @@
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <LicenseToolPath>$(HOME)/.dotnet/tools/dotnet-project-licenses</LicenseToolPath>
+    <LicenseToolPath Condition="'$(OS)' == 'Windows_NT'">
+      $(UserProfile)\.dotnet\tools\dotnet-project-licenses.exe</LicenseToolPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
     <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
     <PackageReference Include="UnityEngine.Modules" Version="2022.3.43" IncludeAssets="compile" />
-    
+
     <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.2" />
   </ItemGroup>
 
@@ -36,8 +42,21 @@
   <ItemGroup>
     <Reference Include="$(MSBuildThisFileDirectory)/../../../spt4-shared-dlls/**/*.dll" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2"
+      PrivateAssets="all" />
   </ItemGroup>
+
+  <Target Name="GenerateLicenseFile" AfterTargets="Publish">
+    <Message Text="Starte Lizenz-Generierung (mit Roll-Forward)..." Importance="high" />
+
+    <Exec
+      Command="$(LicenseToolPath) --input &quot;$(MSBuildProjectFullPath)&quot; --output --outfile &quot;$(PublishDir)SwiftXP.SPT.TheModfather.Client.LICENSES.txt&quot;"
+      EnvironmentVariables="DOTNET_ROLL_FORWARD=Major"
+      ConsoleToMSBuild="true"
+      IgnoreExitCode="false" />
+
+    <Message Text="Lizenz-Generierung abgeschlossen." Importance="high" />
+  </Target>
 </Project>

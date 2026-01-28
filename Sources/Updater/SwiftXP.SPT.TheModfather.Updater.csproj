@@ -18,6 +18,12 @@
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <LicenseToolPath>$(HOME)/.dotnet/tools/dotnet-project-licenses</LicenseToolPath>
+    <LicenseToolPath Condition="'$(OS)' == 'Windows_NT'">
+      $(UserProfile)\.dotnet\tools\dotnet-project-licenses.exe</LicenseToolPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/../Common/Runtime/**/*.cs" />
   </ItemGroup>
@@ -26,4 +32,16 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="10.0.2" />
   </ItemGroup>
+
+  <Target Name="GenerateLicenseFile" AfterTargets="Publish">
+    <Message Text="Starte Lizenz-Generierung (mit Roll-Forward)..." Importance="high" />
+
+    <Exec
+      Command="$(LicenseToolPath) --input &quot;$(MSBuildProjectFullPath)&quot; --output --outfile &quot;$(PublishDir)SwiftXP.SPT.TheModfather.Updater.LICENSES.txt&quot;"
+      EnvironmentVariables="DOTNET_ROLL_FORWARD=Major"
+      ConsoleToMSBuild="true"
+      IgnoreExitCode="false" />
+
+    <Message Text="Lizenz-Generierung abgeschlossen." Importance="high" />
+  </Target>
 </Project>

@@ -49,6 +49,8 @@ Path specifications must always be **relative** to your SPT folder.
 * **Wrong:** `C:/SPT4-OMG/BepInEx/plugins`  
   (Do not use absolute paths or drive letters, it confuses the navigation computer).
 
+It is also possible to use globbing patterns to specify paths. For example, `BepInEx/plugins/**/*.dll` will synchronize all `.dll` files in the plugins folder and all its subdirectories.
+
 **For more information on the server- and client-configuration, please see the corresponding sections.**
 
 #### Planned features/changes
@@ -126,12 +128,12 @@ The default configuration for the server is (v0.2.2):
   It ensures the mod knows which version of reality it is currently operating in.
 
 * **SyncedPaths**:  
-  These are the directories or specific files that will be **sent** to the connecting clients.
+  These are the directories or specific files that will be **sent** to the connecting clients. Globbing patterns are also supported.
   * If you define a folder (e.g., `BepInEx/plugins`), **all** contents within that folder will be synchronized recursively.
   * Remember: Paths are relative to the SPT root folder.
 
 * **ExcludedPaths**:  
-  These are specific exceptions to the `SyncedPaths`. Files or folders listed here will **NOT** be sent, even if they reside inside a synced folder.
+  These are specific exceptions to the `SyncedPaths`. Files or folders listed here will **NOT** be sent, even if they reside inside a synced folder. Globbing patterns are also supported.
   * This is crucial for preventing the overwriting of client-specific files (like `spt-prepatch.dll` or the `spt` folder itself).
 
 **Important Note:** Ensure you maintain valid JSON syntax (commas at the end of lines, quotes around strings). If the JSON is invalid, the universe might implode (mild exaggeration, but the mod won't load).
@@ -220,6 +222,22 @@ You want to sync all configs (`BepInEx/config`), EXCEPT one specific file that c
 }
 ```
 
+---
+
+**Scenario 4: The "Globetrotter" (using globbing patterns)**
+
+You want to sync all `.dll` files from the `BepInEx/plugins` folder and all its subdirectories, but nothing else from that folder.
+
+```json
+{
+  "ConfigVersion": "0.2.2",
+  "SyncedPaths": [
+    "BepInEx/plugins/**/*.dll"
+  ],
+  "ExcludedPaths": []
+}
+```
+
 ### Client-Configuration
 
 #### Client-Configuration
@@ -277,7 +295,7 @@ By using `ExcludedPaths`, you tell the synchronization process: "I don't care wh
   It ensures the mod knows which version of reality it is currently operating in.
 
 * **ExcludedPaths**:  
-  Files or folders listed here will NOT be touched, even if the server tries to update, add, or delete them.  
+  Files or folders listed here will NOT be touched, even if the server tries to update, add, or delete them. Globbing patterns are also supported.
 
   * Use Case: This allows you to keep client-side-only mods that the server doesn't have, without the sync process deleting them as "alien debris".
 

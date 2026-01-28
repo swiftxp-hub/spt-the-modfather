@@ -5,11 +5,12 @@ using SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Models;
+using SPTarkov.Server.Core.Models.Utils;
 
 namespace SwiftXP.SPT.TheModfather.Server.Services;
 
 [Injectable(InjectionType.Scoped)]
-public class ServerFilesHashingService(
+public class ServerFilesHashingService(ISptLogger<TheModfatherMod> logger,
     IServerConfigurationLoader serverConfigurationLoader,
     IBaseDirectoryService baseDirectoryService,
     IFileSearchService fileSearchService,
@@ -21,6 +22,11 @@ public class ServerFilesHashingService(
         string baseDirectory = baseDirectoryService.GetEftBaseDirectory();
 
         IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, serverConfiguration.SyncedPaths, serverConfiguration.ExcludedPaths);
+        foreach (string path in filePathsToHash)
+        {
+            logger.Info($"Found file: {path}");
+        }
+
         Dictionary<string, string> absolutePathHashes = fileHashingService.GetFileHashes(filePathsToHash);
 
         Dictionary<string, string> relativePathHashes = new(absolutePathHashes.Count);

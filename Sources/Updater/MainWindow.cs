@@ -12,6 +12,10 @@ public partial class MainWindow : Form
         _updaterService = updaterService;
 
         InitializeComponent();
+
+        HeaderText.Left = (ClientSize.Width - HeaderText.Width) / 2;
+        StatusText.Left = (ClientSize.Width - StatusText.Width) / 2;
+        ProgressBar.Left = (ClientSize.Width - ProgressBar.Width) / 2;
     }
 
     private async void MainWindow_Load(object sender, EventArgs e)
