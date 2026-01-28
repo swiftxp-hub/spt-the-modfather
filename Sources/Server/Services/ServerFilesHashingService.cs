@@ -5,13 +5,11 @@ using SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Models;
-using SPTarkov.Server.Core.Models.Utils;
 
 namespace SwiftXP.SPT.TheModfather.Server.Services;
 
 [Injectable(InjectionType.Scoped)]
-public class ServerFilesHashingService(ISptLogger<TheModfatherMod> logger,
-    IServerConfigurationLoader serverConfigurationLoader,
+public class ServerFilesHashingService(IServerConfigurationLoader serverConfigurationLoader,
     IBaseDirectoryService baseDirectoryService,
     IFileSearchService fileSearchService,
     IFileHashingService fileHashingService) : IServerFilesHashingService
