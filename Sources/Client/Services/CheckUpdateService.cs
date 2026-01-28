@@ -34,12 +34,6 @@ public class CheckUpdateService(
             string[] pathsToExclude = [.. serverConfiguration.ExcludedPaths.Union(clientConfiguration.ExcludedPaths)];
 
             IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, pathsToSearch, pathsToExclude);
-
-            foreach (string path in filePathsToHash)
-            {
-                simpleSptLogger.LogInfo($"Found file: {path}");
-            }
-
             Dictionary<string, string> absolutePathHashes = fileHashingService.GetFileHashes(filePathsToHash);
 
             Dictionary<string, string> clientFileHashes = new(absolutePathHashes.Count, StringComparer.OrdinalIgnoreCase);

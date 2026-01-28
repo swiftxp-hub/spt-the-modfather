@@ -22,11 +22,6 @@ public class ServerFilesHashingService(ISptLogger<TheModfatherMod> logger,
         string baseDirectory = baseDirectoryService.GetEftBaseDirectory();
 
         IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, serverConfiguration.SyncedPaths, serverConfiguration.ExcludedPaths);
-        foreach (string path in filePathsToHash)
-        {
-            logger.Info($"Found file: {path}");
-        }
-
         Dictionary<string, string> absolutePathHashes = fileHashingService.GetFileHashes(filePathsToHash);
 
         Dictionary<string, string> relativePathHashes = new(absolutePathHashes.Count);
