@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Build and Publish Updater
 
 on:
   workflow_dispatch:
@@ -24,22 +24,16 @@ jobs:
         dotnet-version: '9.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore SwiftXP.SPT.TheModfather.slnx
-
-    - name: Publish Client
-      run: dotnet publish Sources/Client/SwiftXP.SPT.TheModfather.Client.csproj --configuration Release --no-restore -p:Version=${{ github.event.inputs.version }} -o ./publish/BepInEx/plugins/com.swiftxp.spt.themodfather
-
-    - name: Publish Server
-      run: dotnet publish Sources/Server/SwiftXP.SPT.TheModfather.Server.csproj --configuration Release --no-restore -p:Version=${{ github.event.inputs.version }} -o ./publish/SPT/user/mods/com.swiftxp.spt.themodfather
+      run: dotnet restore Sources/Updater/SwiftXP.SPT.TheModfather.Updater.csproj
 
     - name: Publish Updater
       run: dotnet publish Sources/Updater/SwiftXP.SPT.TheModfather.Updater.csproj --configuration Release --no-restore -r win-x64 -p:Version=${{ github.event.inputs.version }} -o ./publish/
 
     - name: Archive release files
-      run: 7z a -t7z swiftxp-themodfather-${{ github.event.inputs.version }}.7z ./publish/*
+      run: 7z a -t7z swiftxp-themodfather-updater-${{ github.event.inputs.version }}.7z ./publish/*
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
       with:
-        name: swiftxp-themodfather-${{ github.event.inputs.version }}
-        path: swiftxp-themodfather-${{ github.event.inputs.version }}.7z
+        name: swiftxp-themodfather-updater-${{ github.event.inputs.version }}
+        path: swiftxp-themodfather-updater-${{ github.event.inputs.version }}.7z
