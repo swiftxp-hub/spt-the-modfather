@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Microsoft.Extensions.FileSystemGlobbing;
 using SPT.Common.Http;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
@@ -51,7 +52,7 @@ public class CheckUpdateService(
             {
                 if (!clientFileHashes.ContainsKey(serverEntry.Key)
                     && !IsFikaHeadlessFile(serverEntry.Key)
-                    && IsHeadlessWhitelisted(serverEntry, baseDirectory, clientConfiguration.HeadlessWhitelist))
+                    && IsHeadlessWhitelisted(serverEntry, clientConfiguration.HeadlessWhitelist))
                 {
                     result.Add(serverEntry.Key, ModSyncAction.Add);
                 }
@@ -133,26 +134,14 @@ public class CheckUpdateService(
             || key.EndsWith(Constants.LicenseHeadlessMd, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsHeadlessWhitelisted(KeyValuePair<string, string> entry, string baseDir, string[] headlessWhitelist)
+    private static bool IsHeadlessWhitelisted(KeyValuePair<string, string> entry, string[] headlessWhitelist)
     {
         if (PluginInfoHelper.IsFikaHeadlessInstalled())
         {
-            string destinationPath = Path.GetFullPath(Path.Combine(baseDir, entry.Key));
+            Matcher matcher = new(StringComparison.OrdinalIgnoreCase);
+            matcher.AddIncludePatterns(headlessWhitelist);
 
-            foreach (string whitelistEntry in headlessWhitelist)
-            {
-                string whitelistedPath = Path.GetFullPath(Path.Combine(baseDir, whitelistEntry.Replace('\\', '/')));
-
-                if (destinationPath.Equals(whitelistedPath, StringComparison.OrdinalIgnoreCase))
-                    return true;
-
-                string whitelistedDir = whitelistedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-
-                if (destinationPath.StartsWith(whitelistedDir, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
+            return matcher.Match(entry.Key).HasMatches;
         }
 
         return true;

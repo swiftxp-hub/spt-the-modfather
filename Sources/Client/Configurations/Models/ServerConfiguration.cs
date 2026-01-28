@@ -9,8 +9,8 @@ public sealed record ServerConfiguration
 
     private string[] _syncedPaths = [
         "SwiftXP.SPT.TheModfather.Updater.exe",
-        "BepInEx/patchers",
-        "BepInEx/plugins"
+        "BepInEx/patchers/**/*",
+        "BepInEx/plugins/**/*"
     ];
 
     public string[] SyncedPaths
@@ -21,7 +21,7 @@ public sealed record ServerConfiguration
 
     private string[] _excludedPaths = [
         "BepInEx/patchers/spt-prepatch.dll",
-        "BepInEx/plugins/spt"
+        "BepInEx/plugins/spt/**/*"
     ];
 
     public string[] ExcludedPaths

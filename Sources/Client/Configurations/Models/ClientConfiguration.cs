@@ -9,7 +9,7 @@ public sealed record ClientConfiguration
 
     private string[] _excludedPaths = [
         "BepInEx/patchers/spt-prepatch.dll",
-        "BepInEx/plugins/spt"
+        "BepInEx/plugins/spt/**/*"
     ];
 
     public string[] ExcludedPaths
@@ -20,10 +20,10 @@ public sealed record ClientConfiguration
 
     private string[] _headlessWhitelist = [
         "SwiftXP.SPT.TheModfather.Updater.exe",
-        "BepInEx/plugins/com.swiftxp.spt.themodfather",
-        "BepInEx/plugins/acidphantasm-botplacementsystem",
-        "BepInEx/plugins/DrakiaXYZ-Waypoints",
-        "BepInEx/plugins/SAIN",
+        "BepInEx/plugins/com.swiftxp.spt.themodfather/**/*",
+        "BepInEx/plugins/acidphantasm-botplacementsystem/**/*",
+        "BepInEx/plugins/DrakiaXYZ-Waypoints/**/*",
+        "BepInEx/plugins/SAIN/**/*",
         "BepInEx/plugins/DrakiaXYZ-BigBrain.dll",
         "BepInEx/plugins/Tyfon.UIFixes.dll",
         "BepInEx/plugins/Tyfon.UIFixes.Net.dll",

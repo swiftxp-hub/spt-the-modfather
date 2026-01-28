@@ -1,8 +1,10 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.Models.Utils;
+using SwiftXP.SPT.Common.Runtime;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Models;
 
@@ -39,13 +41,40 @@ public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> log
             string jsonString = File.ReadAllText(s_filePath);
             ServerConfiguration? config = JsonSerializer.Deserialize<ServerConfiguration>(jsonString, s_options);
 
-            return config ?? new ServerConfiguration();
+            ServerConfiguration loadedConfig = config ?? new ServerConfiguration();
+            MigrateIfNeeded(loadedConfig);
+
+            return loadedConfig;
         }
         catch (JsonException)
         {
             logger.Error($"[ERROR] Configuration is invalid (syntax-error): {s_filePath}");
 
             throw;
+        }
+    }
+
+    private void MigrateIfNeeded(ServerConfiguration config)
+    {
+        if (!Version.TryParse(config.ConfigVersion, out Version? version))
+        {
+            version = new Version(0, 0, 0);
+        }
+
+        if (version < new Version(0, 3, 0))
+        {
+            logger.Info("Migrating server configuration to latest version...");
+
+            config.SyncedPaths =
+                [.. config.SyncedPaths.Select(x => !Path.HasExtension(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
+
+            config.ExcludedPaths =
+                [.. config.ExcludedPaths.Select(x => !Path.HasExtension(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
+
+            config.ConfigVersion = AppMetadata.Version;
+            Save(config);
+
+            logger.Info($"Server configuration migrated to version {AppMetadata.Version}");
         }
     }
 

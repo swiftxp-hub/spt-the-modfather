@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
+using SwiftXP.SPT.Common.Runtime;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Models;
 
@@ -20,7 +22,7 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
     {
         if (!File.Exists(s_filePath))
         {
-            ClientConfiguration defaultConfig = new ClientConfiguration();
+            ClientConfiguration defaultConfig = new();
             Save(defaultConfig);
 
             return defaultConfig;
@@ -31,13 +33,40 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
             string jsonString = File.ReadAllText(s_filePath);
             ClientConfiguration? config = JsonConvert.DeserializeObject<ClientConfiguration>(jsonString, s_options);
 
-            return config ?? new ClientConfiguration();
+            ClientConfiguration loadedConfig = config ?? new ClientConfiguration();
+            MigrateIfNeeded(loadedConfig);
+
+            return loadedConfig;
         }
         catch (JsonException)
         {
             simpleSptLogger.LogError($"Configuration is invalid (syntax-error): {s_filePath}");
 
             throw;
+        }
+    }
+
+    private void MigrateIfNeeded(ClientConfiguration config)
+    {
+        if (!Version.TryParse(config.ConfigVersion, out Version? version))
+        {
+            version = new Version(0, 0, 0);
+        }
+
+        if (version < new Version(0, 3, 0))
+        {
+            simpleSptLogger.LogInfo("Migrating client configuration to latest version...");
+
+            config.ExcludedPaths =
+                [.. config.ExcludedPaths.Select(x => !Path.HasExtension(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
+
+            config.HeadlessWhitelist =
+                [.. config.HeadlessWhitelist.Select(x => !Path.HasExtension(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
+
+            config.ConfigVersion = AppMetadata.Version;
+            Save(config);
+
+            simpleSptLogger.LogInfo($"Client configuration migrated to version {AppMetadata.Version}");
         }
     }
 
