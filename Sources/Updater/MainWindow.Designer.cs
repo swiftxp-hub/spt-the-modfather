@@ -1,4 +1,5 @@
 ﻿using SwiftXP.SPT.Common.Runtime;
+using SwiftXP.SPT.TheModfather.Updater.Controls;
 
 namespace SwiftXP.SPT.TheModfather.Updater
 {
@@ -30,9 +31,9 @@ namespace SwiftXP.SPT.TheModfather.Updater
         /// </summary>
         private void InitializeComponent()
         {
-            this.HeaderText = new Label();
-            this.StatusText = new Label();
-            this.ProgressBar = new ProgressBar();
+            this.HeaderText = new WineCompatibleLabel();
+            this.StatusText = new WineCompatibleLabel();
+            this.ProgressBar = new WineCompatibleProgressBar();
             this.SuspendLayout();
             // 
             // HeaderText
@@ -68,7 +69,7 @@ namespace SwiftXP.SPT.TheModfather.Updater
             // 
             // MainWindow
             // 
-            this.AutoScaleDimensions = new SizeF(7F, 15F);
+            this.AutoScaleDimensions = new SizeF(6F, 15F);
             this.AutoScaleMode = AutoScaleMode.Font;
             this.BackColor = Color.FromArgb(51, 51, 51);
             this.ClientSize = new Size(500, 250);
@@ -88,8 +89,8 @@ namespace SwiftXP.SPT.TheModfather.Updater
 
         #endregion
 
-        private Label HeaderText;
-        private Label StatusText;
-        private ProgressBar ProgressBar;
+        private WineCompatibleLabel HeaderText;
+        private WineCompatibleLabel StatusText;
+        private WineCompatibleProgressBar ProgressBar;
     }
 }

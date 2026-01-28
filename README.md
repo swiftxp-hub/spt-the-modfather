@@ -15,9 +15,9 @@ This MOD facilitates the synchronization of client-Mods (and, if you feel advent
 
 Practically none. If you can run SPT, you can run this.
 
-#### If you use the FIKA headless client:
+#### If you use the Fika headless client:
 
-The Modfather also supports synchronization with one or more FIKA headless clients. However, unlike a standard client (which is generally happy to receive whatever), this utilizes a Whitelist. Only files or directories explicitly listed in the Whitelist will be synchronized.
+The Modfather also supports synchronization with one or more Fika headless clients. However, unlike a standard client (which is generally happy to receive whatever), this utilizes a Whitelist. Only files or directories explicitly listed in the Whitelist will be synchronized.
 
 #### Configuration
 
@@ -67,7 +67,7 @@ Copy the content of the downloaded zip (the **BepInEx** folder and the **.exe** 
 * The file `SwiftXP.SPT.TheModfather.Updater.exe` must be in the same folder as your `EscapeFromTarkov.exe`.
 * Resulting path check:
     ```
-    - ...\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.client.dll
+    - ...\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
     - ...\yourSPTclient\SwiftXP.SPT.TheModfather.Updater.exe
     ```
 
@@ -78,9 +78,9 @@ Copy the content of the downloaded zip into your server directory.
 
 * Resulting path check:
     ```
-    - ...\yourSPTserver\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.client.dll
+    - ...\yourSPTserver\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
     - ...\yourSPTserver\SwiftXP.SPT.TheModfather.Updater.exe
-    - ...\yourSPTserver\SPT\user\mods\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.server.dll
+    - ...\yourSPTserver\SPT\user\mods\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Server.dll
     ```
 
 ---
@@ -89,7 +89,7 @@ Copy the content of the downloaded zip into your server directory.
 
 #### Server-Configuration
 
-To generate the configuration file, you must **launch the server at least once** with the mod installed. (This causes the file to materialize into existence).
+To generate the configuration file, you must **launch the server at least once** with the mod installed. (This causes the file to materialize into existence). Alternatively, you can create it manually.
 
 ---
 
@@ -224,7 +224,7 @@ You want to sync all configs (`BepInEx/config`), EXCEPT one specific file that c
 
 #### Client-Configuration
 
-To generate the configuration file, you must **launch the Game (client) at least once** with the mod installed. (This causes the file to pop into existence from the void).
+To generate the configuration file, you must **launch the Game (client) at least once** with the mod installed. (This causes the file to pop into existence from the void). Alternatively, you can create it manually.
 
 ---
 
@@ -285,7 +285,7 @@ By using `ExcludedPaths`, you tell the synchronization process: "I don't care wh
   
   * **No:** Ignore this section completely. It does nothing for human players.
 
-  * **Yes:** If you are running a FIKA headless client, this list defines the only things you are allowed to download. Please see the specific "FIKA Headless" section for details.
+  * **Yes:** If you are running a Fika headless client, this list defines the only things you are allowed to download. Please see the specific "Fika Headless" section for details.
 
 **Important Note:** Ensure you maintain valid JSON syntax (commas at the end of lines, quotes around strings). If the JSON is invalid, the universe might implode (mild exaggeration, but the mod won't load).
 
@@ -330,15 +330,109 @@ You love the Audio Accessibility Indicators mod, but the server doesn't have it 
 }
 ```
 
+### Fika Headless
 
-### FIKA Headless
+#### Fika Headless
 
-#### FIKA Headless
+To generate the configuration file, you must **launch the Fika headless client at least once** with the mod installed. (This causes the file to pop into existence from the void). Alternatively, you can create it manually.
 
-Coming soon...
+---
 
-### FAQ  
-*No FAQ available yet... the Deep Thought computer is still calculating the questions.*
+The Fika headless client configuration can be found here:
+```
+/yourSPTclientFolder/TheModfather_Data/config.json
+```
+
+---
+
+The default configuration is (v0.2.2):
+
+```json
+{
+  "ConfigVersion": "0.2.2",
+  "ExcludedPaths": [
+    "BepInEx/patchers/spt-prepatch.dll",
+    "BepInEx/plugins/spt"
+  ],
+  "HeadlessWhitelist": [
+    "SwiftXP.SPT.TheModfather.Updater.exe",
+    "BepInEx/plugins/com.swiftxp.spt.themodfather",
+    "BepInEx/plugins/acidphantasm-botplacementsystem",
+    "BepInEx/plugins/DrakiaXYZ-Waypoints",
+    "BepInEx/plugins/SAIN",
+    "BepInEx/plugins/DrakiaXYZ-BigBrain.dll",
+    "BepInEx/plugins/Tyfon.UIFixes.dll",
+    "BepInEx/plugins/Tyfon.UIFixes.Net.dll"
+  ]
+}
+```
+
+---
+
+**Parameter Explanation:**
+
+* **ConfigVersion**:  
+  **Please do not touch this.**  
+  It ensures the mod knows which version of reality it is currently operating in.
+
+* **ExcludedPaths**:  
+  Files or folders listed here will NOT be touched, even if the server tries to update, add, or delete them.  
+
+* **HeadlessWhitelist**:
+
+  **The mod automatically detects if it is running on a Fika headless client. In this mode, ONLY the files and folders listed in this whitelist will be synchronized.**  
+  
+  Many client-side mods are not required on a headless client. It is generally recommended to avoid installing unnecessary client mods in a headless environment.  
+
+  The default whitelist already contains mods that are essential for the Fika headless client to function correctly (e.g., SAIN, to ensure AI improvements are properly calculated).  
+
+**Important Note:** Ensure you maintain valid JSON syntax (commas at the end of lines, quotes around strings). If the JSON is invalid, the universe might implode (mild exaggeration, but the mod won't load).
+
+### FAQ
+
+#### Frequently asked questions *(or questions I made up to feel important)*
+
+*(Last updated Jan 27, 2026 — The Modfather v0.2.2)*
+
+- **Since this is an alpha version, is there a chance it will brick my SPT profile or installation?**
+  - To be honest with you: **Don't Panic**, but every mod has the inherent potential to turn your installation into a sophisticated paperweight. Rest assured, nobody does this on purpose. Is the probability higher because I labeled this version "alpha"? Perhaps. I try my very best not to break things. However, entropy is a fundamental law of the universe.
+
+  - **Golden Rule**: Always backup your stuff. Remember, there are two types of people in the galaxy: Those who have backups, and those who have never lost data... yet.
+
+- **Which files can be synchronized?**
+  - There is practically no limitation on the files and folders you can synchronize, provided they exist within the SPT folder. You can synchronize almost anything your heart desires.
+
+  - **However**, there are security protocols in place: The mod strictly prohibits synchronizing files outside your SPT folder. We wouldn't want to accidentally synchronize your tax returns or the launch codes for a planetary demolition bot, would we?
+
+- **Does this mean the mod can synchronize itself, enabling self-update capability?**  
+  - Precisely. In the default configuration, the mod is fully aware of its own existence and capable of self-updating. Clients must install the mod manually at least once (to establish the link). After that, updates placed on the server will propagate to the clients.
+
+  - *Note:* Self-updating is not strictly guaranteed. Bugs, cosmic radiation, or highly improbable circumstances may occasionally prevent this.
+
+- **Hold on! That implies I could also update the entire SPT installation to a newer version. Right?**
+  - Technically, yes. You could. But I will not provide example configurations for this.
+
+  - This is a procedure so fraught with peril that it could brick the client's installation. If you insist on attempting this and the universe subsequently implodes (or your game crashes), please do not ask for support. You will be politely ignored.
+
+- **Does this mod work with Fika?**
+  - Yes, absolutely. They get along splendidly.
+
+- **Does this mod work with Fika Headless?**
+  - Yes. Please consult the **"Fika Headless"** section of this document for the specific incantations (configurations) required.
+
+- **Can this mod update the Fika headless client?**
+  - **Yes.** The mod is clever enough to distinguish between a headless client and a regular human player. This means you can place Fika Headless specific files on your server (e.g., `Fika.Headless.dll`), and *The Modfather* will intelligently sync these updates **only** to your headless client(s), sparing the regular players from receiving files they neither need nor understand.
+
+- **Is the mod compatible with the `fika-headless-docker` image from `zhliau`?**
+  - Yes, it is.
+  - **Crucial Note:** Remember to set the environment variable `USE_MODSYNC` to `true`. Otherwise, the container will interpret the sync as a critical event and shut down in protest every time an update is processed.
+
+- **Does synchronization work with very large files?**
+  - Yes and no. The mod sets a strict connection timeout of 15 minutes per file.
+
+  - Time is an illusion, but timeouts are very real. If a client can download the file within that window, they are fine. If the file is too colossal or the client's connection is slower than a depressed robot, the synchronization will fail.
+
+ - *More to come...*
 
 {.endtabset}
 
