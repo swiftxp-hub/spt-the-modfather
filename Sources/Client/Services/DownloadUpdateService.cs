@@ -10,7 +10,7 @@ namespace SwiftXP.SPT.TheModfather.Client.Services;
 
 public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirectoryService baseDirectoryService) : IDownloadUpdateService
 {
-    public async Task DownloadAsync(string dataDirectory, string payloadDirectory, string relativeFilePath)
+    public async Task DownloadAsync(string dataDirectory, string payloadDirectory, string relativeFilePath, Action<DownloadProgress>? progressCallback = null)
     {
         if (string.IsNullOrWhiteSpace(relativeFilePath))
             return;
@@ -21,20 +21,11 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
         }
 
         TimeSpan defaultTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
-
-        byte[]? data;
+        RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
 
         try
         {
             string urlPath = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/" + Uri.EscapeDataString(relativeFilePath);
-
-            RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
-            data = await RequestHandler.GetDataAsync(urlPath);
-
-            if (data == null || data.Length == 0)
-            {
-                throw new InvalidOperationException($"Downloaded file '{relativeFilePath}' is empty.");
-            }
 
             string baseDir = baseDirectoryService.GetEftBaseDirectory();
             string payloadBaseDir = Path.GetFullPath(Path.Combine(baseDir, dataDirectory, payloadDirectory));
@@ -46,13 +37,12 @@ public class DownloadUpdateService(ISimpleSptLogger simpleSptLogger, IBaseDirect
             }
 
             string? directoryPath = Path.GetDirectoryName(destinationPath);
-
             if (!string.IsNullOrEmpty(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
             }
 
-            await File.WriteAllBytesAsync(destinationPath, data);
+            await RequestHandler.HttpClient.DownloadAsync(urlPath, destinationPath, progressCallback);
         }
         catch (Exception ex)
         {

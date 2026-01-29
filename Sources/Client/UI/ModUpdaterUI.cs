@@ -14,7 +14,6 @@ public class ModUpdaterUI : MonoBehaviour
     private const int FOOTER_SIZE = 12;
 
     private const string WINDOW_TITLE = "It's not personal, PMC. It's strictly updating...";
-    private const string FOOTER_TEXT = "The game will close automatically. An external tool will finish the update.";
 
     private readonly Color c_tarkovBgDark = new(0.12f, 0.12f, 0.14f, 1f);
     private readonly Color c_tarkovBarBg = new(0.07f, 0.07f, 0.07f, 1f);
@@ -24,6 +23,8 @@ public class ModUpdaterUI : MonoBehaviour
 
     private float currentProgress;
     private string loadingText = "Initializing...";
+    private string footerText = string.Empty;
+
     private bool isVisible;
 
     private GUIStyle? windowStyle;
@@ -45,6 +46,17 @@ public class ModUpdaterUI : MonoBehaviour
     {
         currentProgress = Mathf.Clamp01(progress);
         loadingText = text;
+
+        if (!isVisible)
+        {
+            isVisible = true;
+            CreateInputBlocker();
+        }
+    }
+
+    public void UpdateFooter(string text)
+    {
+        footerText = text;
 
         if (!isVisible)
         {
@@ -114,7 +126,7 @@ public class ModUpdaterUI : MonoBehaviour
         currentY += BAR_HEIGHT + 20f;
 
         Rect footerRect = new(paddingX, currentY, contentWidth, 25);
-        GUI.Label(footerRect, FOOTER_TEXT, footerStyle);
+        GUI.Label(footerRect, footerText, footerStyle);
     }
 
     private void InitStyles()

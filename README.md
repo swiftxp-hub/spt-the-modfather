@@ -70,6 +70,7 @@ Copy the content of the downloaded zip (the **BepInEx** folder and the **.exe** 
 * Resulting path check:
     ```
     - ...\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
+    - ...\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\Microsoft.Extensions.FileSystemGlobbing.dll
     - ...\yourSPTclient\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.LICENSES.txt
     - ...\yourSPTclient\SwiftXP.SPT.TheModfather.Updater.exe
     - ...\yourSPTclient\SwiftXP.SPT.TheModfather.Updater.LICENSES.txt
@@ -83,6 +84,7 @@ Copy the content of the downloaded zip into your server directory.
 * Resulting path check:
     ```
     - ...\yourSPTserver\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.dll
+    - ...\yourSPTserver\BepInEx\plugins\com.swiftxp.spt.themodfather\Microsoft.Extensions.FileSystemGlobbing.dll
     - ...\yourSPTserver\BepInEx\plugins\com.swiftxp.spt.themodfather\SwiftXP.SPT.TheModfather.Client.LICENSES.txt
     - ...\yourSPTserver\SwiftXP.SPT.TheModfather.Updater.exe
     - ...\yourSPTserver\SwiftXP.SPT.TheModfather.Updater.LICENSES.txt

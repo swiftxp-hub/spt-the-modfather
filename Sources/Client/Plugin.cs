@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using BepInEx;
-using BepInEx.Bootstrap;
 using SPT.Reflection.Patching;
+using SwiftXP.SPT.Common.ConfigurationManager;
 using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services;
 using SwiftXP.SPT.Common.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Client.Configuration;
 using SwiftXP.SPT.TheModfather.Client.Configurations;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Helpers;
@@ -30,9 +31,13 @@ public class Plugin : BaseUnityPlugin
     private void Awake()
     {
         Instance = this;
+        Configuration = new PluginConfiguration(Config, Instance);
 
-        s_menuScreenShowPatch = new MenuScreenShowPatch();
-        s_menuScreenShowPatch.Enable();
+        if (Configuration.EnablePlugin.GetValue())
+        {
+            s_menuScreenShowPatch = new MenuScreenShowPatch();
+            s_menuScreenShowPatch.Enable();
+        }
 
         ISimpleSptLogger simpleSptLogger = new SimpleSptLogger(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_VERSION);
         IClientConfigurationLoader clientConfigurationLoader = new ClientConfigurationLoader(simpleSptLogger);
@@ -47,18 +52,21 @@ public class Plugin : BaseUnityPlugin
 
         ModSyncService = new ModSyncService(simpleSptLogger, baseDirectoryService, checkUpdateService, downloadUpdateService);
 
-        StartCoroutine(ModSyncService.SyncMods((result) =>
-        {
-            ModSyncActions = result;
+        if (Configuration.EnablePlugin.GetValue())
+            StartCoroutine(ModSyncService.SyncMods((result) =>
+            {
+                ModSyncActions = result;
 
-            if (PluginInfoHelper.IsFikaHeadlessInstalled() && ModSyncActions.Count > 0)
-                StartCoroutine(ModSyncService.UpdateModsCoroutine(ModSyncActions));
-        }));
+                if (PluginInfoHelper.IsFikaHeadlessInstalled() && ModSyncActions.Count > 0)
+                    StartCoroutine(ModSyncService.UpdateModsCoroutine(ModSyncActions));
+            }));
     }
 
     public static Plugin? Instance { get; private set; }
 
+    public static PluginConfiguration? Configuration { get; set; }
+
     public static IModSyncService? ModSyncService { get; private set; }
 
-    public static Dictionary<string, ModSyncAction>? ModSyncActions { get; private set; }
+    public static Dictionary<string, ModSyncAction>? ModSyncActions { get; set; }
 }

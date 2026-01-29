@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Comfort.Common;
 using EFT.UI;
+using SPT.Common.Http;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Helpers;
@@ -22,23 +24,22 @@ public class ModSyncService(
     ICheckUpdateService checkUpdateService,
     IDownloadUpdateService downloadUpdateService) : IModSyncService
 {
-    private bool _hasShownModUpdaterWindow;
+    private GClass3834? _messageWindow;
 
     private ModUpdaterUI? _modUpdaterWindow;
 
     public void ShowUpdateNotification(Dictionary<string, ModSyncAction> modSyncActions)
     {
-        if (_hasShownModUpdaterWindow)
-            return;
+        if (_messageWindow != null)
+            CloseMessageWindow();
 
         try
         {
-            _hasShownModUpdaterWindow = true;
             ShowUpdateNotificationWindow(modSyncActions);
         }
         catch (Exception ex)
         {
-            _hasShownModUpdaterWindow = false;
+            CloseMessageWindow();
             simpleSptLogger.LogException(ex);
         }
     }
@@ -72,11 +73,18 @@ public class ModSyncService(
             $"... {countDel} files removed\n\n" +
             "Do you want to update now?";
 
-        ItemUiContext.Instance.ShowMessageWindow(
+        Singleton<PreloaderUI>.Instance.StartCoroutine(ShowMessageWindow(message, modSyncActions));
+    }
+
+    private IEnumerator ShowMessageWindow(string message, Dictionary<string, ModSyncAction> modSyncActions)
+    {
+        yield return null;
+
+        _messageWindow = ItemUiContext.Instance.ShowMessageWindow(
             message,
             () => OnContinue(modSyncActions),
-            OnAbort,
-            "The Modfather found some updates...",
+            () => { _messageWindow = null; },
+            $"The Modfather found some updates... {new System.Random().Next(0, 10000)}",
             0f,
             true,
             TextAlignmentOptions.Left
@@ -93,9 +101,13 @@ public class ModSyncService(
         Plugin.Instance!.StartCoroutine(UpdateModsCoroutine(modSyncActions));
     }
 
-    private void OnAbort()
+    private void CloseMessageWindow()
     {
-        // Do nothing.
+        if (_messageWindow == null)
+            return;
+
+        _messageWindow.CloseSilent();
+        _messageWindow = null;
     }
 
     public IEnumerator UpdateModsCoroutine(Dictionary<string, ModSyncAction> modSyncActions)
@@ -123,7 +135,7 @@ public class ModSyncService(
 
             if (modSyncAction.Value == ModSyncAction.Add || modSyncAction.Value == ModSyncAction.Update)
             {
-                Task downloadTask = downloadUpdateService.DownloadAsync(Constants.DataDirectoryName, Constants.PayloadDirectoryName, modSyncAction.Key);
+                Task downloadTask = downloadUpdateService.DownloadAsync(Constants.DataDirectoryName, Constants.PayloadDirectoryName, modSyncAction.Key, UpdateDownloadProgress);
                 yield return new WaitUntil(() => downloadTask.IsCompleted);
 
                 if (downloadTask.IsFaulted)
@@ -172,6 +184,7 @@ public class ModSyncService(
                     else if (File.Exists(absolutePath))
                     {
                         CreateDeleteInstruction(GetPayloadPath(baseDir), modSyncAction.Key);
+                        UpdateFooter($"Created delete instruction for: {modSyncAction.Key}");
                     }
                 }
                 catch (Exception ex)
@@ -187,7 +200,11 @@ public class ModSyncService(
         }
 
         if (success)
+        {
+            UpdateFooter("The game will close automatically. An external tool will finish the update.");
+
             yield return StartUpdaterAndQuit(baseDir);
+        }
     }
 
     private async Task EnsurePayloadExistsAndIsEmpty(string baseDir)
@@ -284,6 +301,12 @@ public class ModSyncService(
         return Path.GetFullPath(Path.Combine(baseDir, Constants.DataDirectoryName, Constants.PayloadDirectoryName, relativePath));
     }
 
+    private void UpdateDownloadProgress(DownloadProgress downloadProgress)
+    {
+        string downloadText = $"Download Speed: {downloadProgress.DownloadSpeed} | Progress: {downloadProgress.FileSizeInfo}";
+        UpdateFooter(downloadText);
+    }
+
     private void UpdateProgress(int current, int total)
     {
         if (_modUpdaterWindow == null)
@@ -291,5 +314,13 @@ public class ModSyncService(
 
         float progress = (float)current / total;
         _modUpdaterWindow.UpdateProgress(progress, $"Settling all family business ({current}/{total})...");
+    }
+
+    private void UpdateFooter(string text)
+    {
+        if (_modUpdaterWindow == null)
+            return;
+
+        _modUpdaterWindow.UpdateFooter(text);
     }
 }

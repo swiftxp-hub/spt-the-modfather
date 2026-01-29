@@ -49,7 +49,7 @@
   </ItemGroup>
 
   <Target Name="GenerateLicenseFile" AfterTargets="Publish">
-    <Message Text="Starte Lizenz-Generierung (mit Roll-Forward)..." Importance="high" />
+    <Message Text="Generating license file..." Importance="high" />
 
     <Exec
       Command="$(LicenseToolPath) --input &quot;$(MSBuildProjectFullPath)&quot; --output --outfile &quot;$(PublishDir)SwiftXP.SPT.TheModfather.Client.LICENSES.txt&quot;"
@@ -57,6 +57,6 @@
       ConsoleToMSBuild="true"
       IgnoreExitCode="false" />
 
-    <Message Text="Lizenz-Generierung abgeschlossen." Importance="high" />
+    <Message Text="License file generated." Importance="high" />
   </Target>
 </Project>

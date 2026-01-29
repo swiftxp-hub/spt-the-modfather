@@ -2,6 +2,7 @@ using EFT.UI;
 using SPT.Reflection.Patching;
 using System.Reflection;
 using HarmonyLib;
+using SwiftXP.SPT.Common.Notifications;
 
 namespace SwiftXP.SPT.TheModfather.Client.Patches;
 
@@ -17,6 +18,8 @@ public class MenuScreenShowPatch : ModulePatch
     {
         if (Plugin.ModSyncActions != null && Plugin.ModSyncActions.Count > 0)
             Plugin.ModSyncService!.ShowUpdateNotification(Plugin.ModSyncActions);
+        else
+            NotificationsService.SendNotice("The modfather found no updates. Happy playing!");
 
         Plugin.DisableMenuScreenShowPatch();
     }
