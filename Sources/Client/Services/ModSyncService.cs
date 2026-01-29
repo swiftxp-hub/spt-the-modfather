@@ -84,7 +84,7 @@ public class ModSyncService(
             message,
             () => OnContinue(modSyncActions),
             () => { _messageWindow = null; },
-            $"The Modfather found some updates... {new System.Random().Next(0, 10000)}",
+            "The Modfather found some updates...",
             0f,
             true,
             TextAlignmentOptions.Left
