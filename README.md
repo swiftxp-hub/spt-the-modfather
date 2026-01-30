@@ -105,11 +105,11 @@ The server configuration can be found here:
 
 ---
 
-The default configuration for the server is (v1.0.0):
+The default configuration for the server is (v1.0.1):
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
     "BepInEx/patchers/**/*",
@@ -157,7 +157,7 @@ Simply add `"BepInEx/config"` to your `SyncedPaths`.
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
     "BepInEx/patchers/**/*",
@@ -179,7 +179,7 @@ You can also sync only specific config files (e.g. the settings for Acid's Bot P
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
     "BepInEx/patchers/**/*",
@@ -207,7 +207,7 @@ In this example, we only sync one specific mod folder:
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "SyncedPaths": [
     "BepInEx/plugins/SamSWAT-TimeWeatherChanger/**/*"
   ],
@@ -223,7 +223,7 @@ You want to sync all configs (`BepInEx/config`), EXCEPT one specific file that c
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
     "BepInEx/plugins/**/*",
@@ -256,11 +256,11 @@ The client configuration can be found here:
 
 ---
 
-The default configuration for the client is (v1.0.0):
+The default configuration for the client is (v1.0.1):
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
@@ -326,7 +326,7 @@ You exclude the specific config file so the server can't overwrite your beautifu
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
@@ -348,7 +348,7 @@ You love the Audio Accessibility Indicators mod, but the server doesn't have it 
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
@@ -378,11 +378,11 @@ The Fika headless client configuration can be found here:
 
 ---
 
-The default configuration is (v1.0.0):
+The default configuration is (v1.0.1):
 
 ```json
 {
-  "ConfigVersion": "1.0.0",
+  "ConfigVersion": "1.0.1",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
@@ -431,7 +431,7 @@ The default configuration is (v1.0.0):
 
 #### Frequently asked questions *(or questions I made up to feel important)*
 
-*(Last updated Jan 30, 2026 — The Modfather v1.0.0)*
+*(Last updated Jan 30, 2026 — The Modfather v1.0.1)*
 
 - **Is there a chance it will brick my SPT profile or installation?**
   - To be honest with you: **Don't Panic**, but every mod has the inherent potential to turn your installation into a sophisticated paperweight. Rest assured, nobody does this on purpose. I try my very best not to break things. However, entropy is a fundamental law of the universe.
