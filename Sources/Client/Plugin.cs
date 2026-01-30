@@ -31,7 +31,7 @@ public class Plugin : BaseUnityPlugin
     private void Awake()
     {
         Instance = this;
-        Configuration = new PluginConfiguration(Config, Instance);
+        Configuration = new PluginConfiguration(Config);
 
         if (Configuration.EnablePlugin.GetValue())
         {

@@ -5,6 +5,7 @@ using SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Server.Configurations.Models;
+using System.Threading.Tasks;
 
 namespace SwiftXP.SPT.TheModfather.Server.Services;
 
@@ -14,13 +15,13 @@ public class ServerFilesHashingService(IServerConfigurationLoader serverConfigur
     IFileSearchService fileSearchService,
     IFileHashingService fileHashingService) : IServerFilesHashingService
 {
-    public Dictionary<string, string> GetServerFileHashes()
+    public async Task<Dictionary<string, string>> GetServerFileHashes()
     {
         ServerConfiguration serverConfiguration = serverConfigurationLoader.LoadOrCreate();
         string baseDirectory = baseDirectoryService.GetEftBaseDirectory();
 
         IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, serverConfiguration.SyncedPaths, serverConfiguration.ExcludedPaths);
-        Dictionary<string, string> absolutePathHashes = fileHashingService.GetFileHashes(filePathsToHash);
+        Dictionary<string, string> absolutePathHashes = await fileHashingService.GetFileHashes(filePathsToHash);
 
         Dictionary<string, string> relativePathHashes = new(absolutePathHashes.Count);
 

@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SwiftXP.SPT.TheModfather.Server.Services.Interfaces;
 
 public interface IServerFilesHashingService
 {
-    Dictionary<string, string> GetServerFileHashes();
+    Task<Dictionary<string, string>> GetServerFileHashes();
 }

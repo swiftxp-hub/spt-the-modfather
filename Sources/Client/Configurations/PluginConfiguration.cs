@@ -7,7 +7,7 @@ namespace SwiftXP.SPT.TheModfather.Client.Configuration;
 
 public class PluginConfiguration
 {
-    public PluginConfiguration(ConfigFile configFile, Plugin plugin)
+    public PluginConfiguration(ConfigFile configFile)
     {
         // --- 1. Main settings
         EnablePlugin = configFile.BindConfiguration("1. Main settings", "Enable plug-in", true, $"Enable or disable the plug-in.{Environment.NewLine}{Environment.NewLine}(Default: Enabled)", 1);
@@ -19,7 +19,7 @@ public class PluginConfiguration
             "Checks for updates and prompts you to install them.",
             () =>
             {
-                plugin.StartCoroutine(Plugin.ModSyncService!.SyncMods((result) =>
+                Plugin.Instance!.StartCoroutine(Plugin.ModSyncService!.SyncMods((result) =>
                 {
                     Plugin.ModSyncActions = result;
 

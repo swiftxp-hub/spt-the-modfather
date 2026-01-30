@@ -60,7 +60,7 @@ public class ModHttpListener(
 
     private async Task HandleGetFileHashesAsync(HttpContext context)
     {
-        Dictionary<string, string> result = serverFilesHashingService.GetServerFileHashes();
+        Dictionary<string, string> result = await serverFilesHashingService.GetServerFileHashes();
 
         await context.Response.WriteAsJsonAsync(result, context.RequestAborted);
     }
