@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using Sirenix.Utilities;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Runtime;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
@@ -76,6 +77,23 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
 
             config.HeadlessWhitelist =
                 [.. config.HeadlessWhitelist.Select(x => !LooksLikeAFile(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
+
+            config.ConfigVersion = AppMetadata.Version;
+            Save(config);
+
+            simpleSptLogger.LogInfo($"Client configuration migrated to version {AppMetadata.Version}");
+        }
+        else if (version < new Version(1, 0, 1))
+        {
+            simpleSptLogger.LogInfo("Migrating client configuration to latest version...");
+
+            config.ExcludedPaths =
+                [.. config.ExcludedPaths.Union([
+                    "**/*.log",
+                    "BepInEx/plugins/SAIN/BotTypes.json",
+                    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+                    "BepInEx/plugins/SAIN/Presets/**/*"
+                ])];
 
             config.ConfigVersion = AppMetadata.Version;
             Save(config);

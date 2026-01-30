@@ -91,6 +91,23 @@ public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> log
 
             logger.Info($"Server configuration migrated to version {AppMetadata.Version}");
         }
+        else if (version < new Version(1, 0, 1))
+        {
+            logger.Info("Migrating server configuration to latest version...");
+
+            config.ExcludedPaths =
+                [.. config.ExcludedPaths.Union([
+                    "**/*.log",
+                    "BepInEx/plugins/SAIN/BotTypes.json",
+                    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+                    "BepInEx/plugins/SAIN/Presets/**/*"
+                ])];
+
+            config.ConfigVersion = AppMetadata.Version;
+            Save(config);
+
+            logger.Info($"Server configuration migrated to version {AppMetadata.Version}");
+        }
     }
 
     private static bool LooksLikeAFile(string path)

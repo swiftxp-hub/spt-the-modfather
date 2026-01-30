@@ -20,6 +20,10 @@ public sealed record ServerConfiguration
     }
 
     private string[] _excludedPaths = [
+        "**/*.log",
+        "BepInEx/plugins/SAIN/BotTypes.json",
+        "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+        "BepInEx/plugins/SAIN/Presets/**/*",
         "BepInEx/patchers/spt-prepatch.dll",
         "BepInEx/plugins/spt/**/*"
     ];
