@@ -117,7 +117,11 @@ The default configuration for the server is (v1.0.0):
   ],
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt/**/*"
+    "BepInEx/plugins/spt/**/*",
+    "**/*.log",
+    "BepInEx/plugins/SAIN/BotTypes.json",
+    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+    "BepInEx/plugins/SAIN/Presets/**/*"
   ]
 }
 ```
@@ -162,7 +166,11 @@ Simply add `"BepInEx/config"` to your `SyncedPaths`.
   ],
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt/**/*"
+    "BepInEx/plugins/spt/**/*",
+    "**/*.log",
+    "BepInEx/plugins/SAIN/BotTypes.json",
+    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+    "BepInEx/plugins/SAIN/Presets/**/*"
   ]
 }
 ```
@@ -180,7 +188,11 @@ You can also sync only specific config files (e.g. the settings for Acid's Bot P
   ],
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt/**/*"
+    "BepInEx/plugins/spt/**/*",
+    "**/*.log",
+    "BepInEx/plugins/SAIN/BotTypes.json",
+    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+    "BepInEx/plugins/SAIN/Presets/**/*"
   ]
 }
 ```
@@ -220,6 +232,10 @@ You want to sync all configs (`BepInEx/config`), EXCEPT one specific file that c
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
+    "**/*.log",
+    "BepInEx/plugins/SAIN/BotTypes.json",
+    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+    "BepInEx/plugins/SAIN/Presets/**/*",
     "BepInEx/config/vogon.poetry.cfg"
   ]
 }
@@ -247,7 +263,11 @@ The default configuration for the client is (v1.0.0):
   "ConfigVersion": "1.0.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt/**/*"
+    "BepInEx/plugins/spt/**/*",
+    "**/*.log",
+    "BepInEx/plugins/SAIN/BotTypes.json",
+    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+    "BepInEx/plugins/SAIN/Presets/**/*"
   ],
   "HeadlessWhitelist": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
@@ -310,6 +330,10 @@ You exclude the specific config file so the server can't overwrite your beautifu
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
+    "**/*.log",
+    "BepInEx/plugins/SAIN/BotTypes.json",
+    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+    "BepInEx/plugins/SAIN/Presets/**/*",
     "BepInEx/config/com.amands.graphics.cfg"
   ],
   "HeadlessWhitelist": [...]
@@ -328,6 +352,10 @@ You love the Audio Accessibility Indicators mod, but the server doesn't have it 
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
+    "**/*.log",
+    "BepInEx/plugins/SAIN/BotTypes.json",
+    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+    "BepInEx/plugins/SAIN/Presets/**/*",
     "BepInEx/plugins/acidphantasm-accessibilityindicators/**/*",
     "BepInEx/config/com.acidphantasm.accessibilityindicators.cfg"
   ],
@@ -357,7 +385,11 @@ The default configuration is (v1.0.0):
   "ConfigVersion": "1.0.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
-    "BepInEx/plugins/spt/**/*"
+    "BepInEx/plugins/spt/**/*",
+    "**/*.log",
+    "BepInEx/plugins/SAIN/BotTypes.json",
+    "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+    "BepInEx/plugins/SAIN/Presets/**/*"
   ],
   "HeadlessWhitelist": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
