@@ -1,7 +1,3 @@
----
-> This is an alpha release. **DON'T PANIC**. It is mostly harmless, but can be populated by bugs. If you forgot your towel (or fear instability), please do not press the download button.
----
-
 ## Tabs {.tabset}
 
 ### The Modfather
@@ -109,11 +105,11 @@ The server configuration can be found here:
 
 ---
 
-The default configuration for the server is (v0.3.0):
+The default configuration for the server is (v1.0.0):
 
 ```json
 {
-  "ConfigVersion": "0.3.0",
+  "ConfigVersion": "1.0.0",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
     "BepInEx/patchers/**/*",
@@ -157,7 +153,7 @@ Simply add `"BepInEx/config"` to your `SyncedPaths`.
 
 ```json
 {
-  "ConfigVersion": "0.3.0",
+  "ConfigVersion": "1.0.0",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
     "BepInEx/patchers/**/*",
@@ -175,7 +171,7 @@ You can also sync only specific config files (e.g. the settings for Acid's Bot P
 
 ```json
 {
-  "ConfigVersion": "0.3.0",
+  "ConfigVersion": "1.0.0",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
     "BepInEx/patchers/**/*",
@@ -199,7 +195,7 @@ In this example, we only sync one specific mod folder:
 
 ```json
 {
-  "ConfigVersion": "0.3.0",
+  "ConfigVersion": "1.0.0",
   "SyncedPaths": [
     "BepInEx/plugins/SamSWAT-TimeWeatherChanger/**/*"
   ],
@@ -215,7 +211,7 @@ You want to sync all configs (`BepInEx/config`), EXCEPT one specific file that c
 
 ```json
 {
-  "ConfigVersion": "0.2.2",
+  "ConfigVersion": "1.0.0",
   "SyncedPaths": [
     "SwiftXP.SPT.TheModfather.Updater.exe",
     "BepInEx/plugins/**/*",
@@ -244,11 +240,11 @@ The client configuration can be found here:
 
 ---
 
-The default configuration for the client is (v0.3.0):
+The default configuration for the client is (v1.0.0):
 
 ```json
 {
-  "ConfigVersion": "0.3.0",
+  "ConfigVersion": "1.0.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*"
@@ -310,7 +306,7 @@ You exclude the specific config file so the server can't overwrite your beautifu
 
 ```json
 {
-  "ConfigVersion": "0.3.0",
+  "ConfigVersion": "1.0.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
@@ -328,7 +324,7 @@ You love the Audio Accessibility Indicators mod, but the server doesn't have it 
 
 ```json
 {
-  "ConfigVersion": "0.3.0",
+  "ConfigVersion": "1.0.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*",
@@ -354,11 +350,11 @@ The Fika headless client configuration can be found here:
 
 ---
 
-The default configuration is (v0.3.0):
+The default configuration is (v1.0.0):
 
 ```json
 {
-  "ConfigVersion": "0.3.0",
+  "ConfigVersion": "1.0.0",
   "ExcludedPaths": [
     "BepInEx/patchers/spt-prepatch.dll",
     "BepInEx/plugins/spt/**/*"
@@ -403,10 +399,10 @@ The default configuration is (v0.3.0):
 
 #### Frequently asked questions *(or questions I made up to feel important)*
 
-*(Last updated Jan 27, 2026 — The Modfather v0.2.2)*
+*(Last updated Jan 30, 2026 — The Modfather v1.0.0)*
 
-- **Since this is an alpha version, is there a chance it will brick my SPT profile or installation?**
-  - To be honest with you: **Don't Panic**, but every mod has the inherent potential to turn your installation into a sophisticated paperweight. Rest assured, nobody does this on purpose. Is the probability higher because I labeled this version "alpha"? Perhaps. I try my very best not to break things. However, entropy is a fundamental law of the universe.
+- **Is there a chance it will brick my SPT profile or installation?**
+  - To be honest with you: **Don't Panic**, but every mod has the inherent potential to turn your installation into a sophisticated paperweight. Rest assured, nobody does this on purpose. I try my very best not to break things. However, entropy is a fundamental law of the universe.
 
   - **Golden Rule**: Always backup your stuff. Remember, there are two types of people in the galaxy: Those who have backups, and those who have never lost data... yet.
 

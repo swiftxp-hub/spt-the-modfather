@@ -8,6 +8,8 @@
     <Product>The Modfather</Product>
     <RootNamespace>SwiftXP.SPT.TheModfather.Server</RootNamespace>
     <OutputType>Library</OutputType>
+
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -32,7 +34,14 @@
     <PackageReference Include="SPTarkov.Common" Version="4.0.11" />
     <PackageReference Include="SPTarkov.DI" Version="4.0.11" />
     <PackageReference Include="SPTarkov.Server.Core" Version="4.0.11" />
-    <PackageReference Include="System.IO.Hashing" Version="10.0.2" />
+    
+    <PackageReference Include="System.IO.Hashing" Version="9.0.9">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="9.*">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <Target Name="GenerateLicenseFile" AfterTargets="Publish">
@@ -41,5 +50,19 @@
     <Exec Command="$(LicenseToolPath) --input &quot;$(MSBuildProjectFullPath)&quot; --output --outfile &quot;$(PublishDir)SwiftXP.SPT.TheModfather.Server.LICENSES.txt&quot;" EnvironmentVariables="DOTNET_ROLL_FORWARD=Major" ConsoleToMSBuild="true" IgnoreExitCode="false" />
 
     <Message Text="License file generated." Importance="high" />
+  </Target>
+
+  <Target Name="CopyToPublishFolder" AfterTargets="GenerateLicenseFile">
+    <Message Text="Copying published files to /Publish folder..." Importance="high" />
+
+    <ItemGroup>
+        <PublishedFiles Include="$(PublishDir)SwiftXP.SPT.TheModfather.Server.dll" />
+        <PublishedFiles Include="$(PublishDir)SwiftXP.SPT.TheModfather.Server.LICENSES.txt" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(MSBuildProjectDirectory)/../../Publish" />
+
+    <Copy SourceFiles="@(PublishedFiles)"
+          DestinationFolder="$(MSBuildProjectDirectory)/../../Publish/SPT/user/mods/com.swiftxp.spt.themodfather" />
   </Target>
 </Project>

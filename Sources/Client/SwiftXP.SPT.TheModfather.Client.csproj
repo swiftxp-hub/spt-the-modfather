@@ -12,6 +12,8 @@
     </RestoreAdditionalProjectSources>
     <RootNamespace>SwiftXP.SPT.TheModfather.Client</RootNamespace>
     <OutputType>Library</OutputType>
+
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -30,10 +32,15 @@
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
     <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
-    <PackageReference Include="System.IO.Hashing" Version="10.0.2" />
     <PackageReference Include="UnityEngine.Modules" Version="2022.3.43" IncludeAssets="compile" />
 
-    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.2" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+
+    <PackageReference Include="System.IO.Hashing" Version="9.0.9">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="9.*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -54,5 +61,18 @@
     <Exec Command="$(LicenseToolPath) --input &quot;$(MSBuildProjectFullPath)&quot; --output --outfile &quot;$(PublishDir)SwiftXP.SPT.TheModfather.Client.LICENSES.txt&quot;" EnvironmentVariables="DOTNET_ROLL_FORWARD=Major" ConsoleToMSBuild="true" IgnoreExitCode="false" />
 
     <Message Text="License file generated." Importance="high" />
+  </Target>
+
+  <Target Name="CopyToPublishFolder" AfterTargets="GenerateLicenseFile">
+    <Message Text="Copying published files to /Publish folder..." Importance="high" />
+
+    <ItemGroup>
+        <PublishedFiles Include="$(PublishDir)Microsoft.Extensions.FileSystemGlobbing.dll" />
+        <PublishedFiles Include="$(PublishDir)SwiftXP.SPT.TheModfather.Client.dll" />
+        <PublishedFiles Include="$(PublishDir)SwiftXP.SPT.TheModfather.Client.LICENSES.txt" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(PublishedFiles)"
+          DestinationFolder="$(MSBuildProjectDirectory)/../../Publish/BepInEx/plugins/com.swiftxp.spt.themodfather" />
   </Target>
 </Project>
