@@ -10,6 +10,8 @@ using EFT.UI;
 using SPT.Common.Http;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
+using SwiftXP.SPT.TheModfather.Client.Configurations.Models;
 using SwiftXP.SPT.TheModfather.Client.Helpers;
 using SwiftXP.SPT.TheModfather.Client.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.UI;
@@ -21,6 +23,7 @@ namespace SwiftXP.SPT.TheModfather.Client.Services;
 public class ModSyncService(
     ISimpleSptLogger simpleSptLogger,
     IBaseDirectoryService baseDirectoryService,
+    IClientConfigurationLoader clientConfigurationLoader,
     ICheckUpdateService checkUpdateService,
     IDownloadUpdateService downloadUpdateService) : IModSyncService
 {
@@ -110,11 +113,14 @@ public class ModSyncService(
         _messageWindow = null;
     }
 
+    // Todo: Refactor monster-method.
     public IEnumerator UpdateModsCoroutine(Dictionary<string, ModSyncAction> modSyncActions)
     {
         int actionCount = 0;
         int totalActions = modSyncActions.Count;
         string baseDir = baseDirectoryService.GetEftBaseDirectory();
+
+        ClientConfiguration clientConfiguration = clientConfigurationLoader.LoadOrCreate();
 
         Task ensurePayloadTask = EnsurePayloadExistsAndIsEmpty(baseDir);
         yield return new WaitUntil(() => ensurePayloadTask.IsCompleted);
@@ -135,12 +141,34 @@ public class ModSyncService(
 
             if (modSyncAction.Value == ModSyncAction.Add || modSyncAction.Value == ModSyncAction.Update)
             {
-                Task downloadTask = downloadUpdateService.DownloadAsync(Constants.DataDirectoryName, Constants.PayloadDirectoryName, modSyncAction.Key, UpdateDownloadProgress);
-                yield return new WaitUntil(() => downloadTask.IsCompleted);
+                bool downloadSuccess = false;
+                int maxRetries = clientConfiguration.MaxDownloadRetries;
 
-                if (downloadTask.IsFaulted)
+                for (int i = 0; i <= maxRetries; i++)
                 {
-                    simpleSptLogger.LogError($"Failed to download {modSyncAction.Key}: {downloadTask.Exception?.InnerException?.Message}");
+                    Task downloadTask = downloadUpdateService.DownloadAsync(Constants.DataDirectoryName, Constants.PayloadDirectoryName, modSyncAction.Key, UpdateDownloadProgress);
+                    yield return new WaitUntil(() => downloadTask.IsCompleted);
+
+                    if (downloadTask.IsFaulted)
+                    {
+                        simpleSptLogger.LogError($"Failed to download {modSyncAction.Key} (Attempt {i + 1}/{maxRetries + 1}): {downloadTask.Exception?.InnerException?.Message}");
+
+                        if (i < maxRetries)
+                        {
+                            UpdateFooter($"Download failed. Retrying in 15 seconds (Attempt {i + 1}/{maxRetries + 1})...");
+                            yield return new WaitForSeconds(clientConfiguration.SecondsToWaitBetweenDownloadRetries);
+                        }
+                    }
+                    else
+                    {
+                        downloadSuccess = true;
+                        break;
+                    }
+                }
+
+                if (!downloadSuccess)
+                {
+                    simpleSptLogger.LogError($"Failed to download {modSyncAction.Key} after {maxRetries + 1} attempts.");
                     success = false;
 
                     break;
@@ -197,6 +225,8 @@ public class ModSyncService(
             actionCount++;
 
             UpdateProgress(actionCount, totalActions);
+
+            yield return null;
         }
 
         if (success)
@@ -253,7 +283,7 @@ public class ModSyncService(
 
         string[] startOptions =
         [
-            PluginInfoHelper.IsFikaHeadlessInstalled() ? "--silent true" : string.Empty,
+            PluginInfoHelper.IsHeadlessInstalled() ? "--silent true" : string.Empty,
             $"--processid {Process.GetCurrentProcess().Id}"
         ];
 
@@ -299,6 +329,41 @@ public class ModSyncService(
     private static string GetPayloadPath(string baseDir, string relativePath)
     {
         return Path.GetFullPath(Path.Combine(baseDir, Constants.DataDirectoryName, Constants.PayloadDirectoryName, relativePath));
+    }
+
+    private IEnumerator DownloadFileWithRetry(string key, Action<bool> onResult)
+    {
+        bool downloadSuccess = false;
+        const int maxRetries = 3;
+
+        for (int i = 0; i <= maxRetries; i++)
+        {
+            Task downloadTask = downloadUpdateService.DownloadAsync(Constants.DataDirectoryName, Constants.PayloadDirectoryName, key, UpdateDownloadProgress);
+            yield return new WaitUntil(() => downloadTask.IsCompleted);
+
+            if (downloadTask.IsFaulted)
+            {
+                simpleSptLogger.LogError($"Failed to download {key} (Attempt {i + 1}/{maxRetries + 1}): {downloadTask.Exception?.InnerException?.Message}");
+
+                if (i < maxRetries)
+                {
+                    UpdateFooter($"Download failed. Retrying in 15 seconds...");
+                    yield return new WaitForSeconds(15f);
+                }
+            }
+            else
+            {
+                downloadSuccess = true;
+                break;
+            }
+        }
+
+        if (!downloadSuccess)
+        {
+            simpleSptLogger.LogError($"Failed to download {key} after {maxRetries + 1} attempts.");
+        }
+
+        onResult?.Invoke(downloadSuccess);
     }
 
     private void UpdateDownloadProgress(DownloadProgress downloadProgress)

@@ -3,12 +3,9 @@ using BepInEx;
 using SPT.Reflection.Patching;
 using SwiftXP.SPT.Common.ConfigurationManager;
 using SwiftXP.SPT.Common.Loggers;
-using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Services;
-using SwiftXP.SPT.Common.Services.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Configuration;
 using SwiftXP.SPT.TheModfather.Client.Configurations;
-using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
 using SwiftXP.SPT.TheModfather.Client.Helpers;
 using SwiftXP.SPT.TheModfather.Client.Patches;
 using SwiftXP.SPT.TheModfather.Client.Services;
@@ -33,31 +30,31 @@ public class Plugin : BaseUnityPlugin
         Instance = this;
         Configuration = new PluginConfiguration(Config);
 
-        if (Configuration.EnablePlugin.GetValue())
+        if (Configuration.EnablePlugin.GetValue() && !PluginInfoHelper.IsHeadlessInstalled())
         {
             s_menuScreenShowPatch = new MenuScreenShowPatch();
             s_menuScreenShowPatch.Enable();
         }
 
-        ISimpleSptLogger simpleSptLogger = new SimpleSptLogger(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_VERSION);
-        IClientConfigurationLoader clientConfigurationLoader = new ClientConfigurationLoader(simpleSptLogger);
-        IBaseDirectoryService baseDirectoryService = new BaseDirectoryService();
-        IFileSearchService fileSearchService = new FileSearchService();
-        IFileHashingService fileHashingService = new FileHashingService();
+        SimpleSptLogger simpleSptLogger = new(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_VERSION);
+        ClientConfigurationLoader clientConfigurationLoader = new(simpleSptLogger);
+        BaseDirectoryService baseDirectoryService = new();
+        FileSearchService fileSearchService = new();
+        FileHashingService fileHashingService = new();
 
-        ICheckUpdateService checkUpdateService = new CheckUpdateService(simpleSptLogger, baseDirectoryService, clientConfigurationLoader,
+        CheckUpdateService checkUpdateService = new(simpleSptLogger, baseDirectoryService, clientConfigurationLoader,
             fileSearchService, fileHashingService);
 
-        IDownloadUpdateService downloadUpdateService = new DownloadUpdateService(simpleSptLogger, baseDirectoryService);
+        DownloadUpdateService downloadUpdateService = new(simpleSptLogger, baseDirectoryService);
 
-        ModSyncService = new ModSyncService(simpleSptLogger, baseDirectoryService, checkUpdateService, downloadUpdateService);
+        ModSyncService = new ModSyncService(simpleSptLogger, baseDirectoryService, clientConfigurationLoader, checkUpdateService, downloadUpdateService);
 
         if (Configuration.EnablePlugin.GetValue())
             StartCoroutine(ModSyncService.SyncMods((result) =>
             {
                 ModSyncActions = result;
 
-                if (PluginInfoHelper.IsFikaHeadlessInstalled() && ModSyncActions.Count > 0)
+                if (PluginInfoHelper.IsHeadlessInstalled() && ModSyncActions.Count > 0)
                     StartCoroutine(ModSyncService.UpdateModsCoroutine(ModSyncActions));
             }));
     }

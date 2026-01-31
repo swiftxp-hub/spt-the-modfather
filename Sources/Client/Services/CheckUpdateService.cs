@@ -22,68 +22,48 @@ public class CheckUpdateService(
     IFileSearchService fileSearchService,
     IFileHashingService fileHashingService) : ICheckUpdateService
 {
-    public async Task<Dictionary<string, ModSyncAction>> CheckForUpdatesAsync()
+    public Task<Dictionary<string, ModSyncAction>> CheckForUpdatesAsync()
     {
-        try
+        return Task.Run(async () =>
         {
-            ClientConfiguration clientConfiguration = clientConfigurationLoader.LoadOrCreate();
-            ServerConfiguration serverConfiguration = await GetServerConfigurationAsync();
-            Dictionary<string, string> serverFileHashes = await GetServerFileHashesAsync();
-
-            string baseDirectory = baseDirectoryService.GetEftBaseDirectory();
-            string[] pathsToSearch = serverConfiguration.SyncedPaths;
-            string[] pathsToExclude = [.. serverConfiguration.ExcludedPaths.Union(clientConfiguration.ExcludedPaths)];
-
-            IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, pathsToSearch, pathsToExclude);
-            Dictionary<string, string> absolutePathHashes = await fileHashingService.GetFileHashes(filePathsToHash);
-
-            Dictionary<string, string> clientFileHashes = new(absolutePathHashes.Count, StringComparer.OrdinalIgnoreCase);
-            foreach (KeyValuePair<string, string> kvp in absolutePathHashes)
+            try
             {
-                string relativePath = Path.GetRelativePath(baseDirectory, kvp.Key);
-                string normalizedKey = relativePath.Replace('\\', '/');
+                ClientConfiguration clientConfiguration = clientConfigurationLoader.LoadOrCreate();
+                ServerConfiguration serverConfiguration = await GetServerConfigurationAsync();
+                Dictionary<string, string> serverFileHashes = await GetServerFileHashesAsync();
 
-                clientFileHashes[normalizedKey] = kvp.Value;
+                string baseDirectory = baseDirectoryService.GetEftBaseDirectory();
+                string[] pathsToSearch = serverConfiguration.SyncedPaths;
+                string[] pathsToExclude = [.. serverConfiguration.ExcludedPaths.Union(clientConfiguration.ExcludedPaths)];
+
+                IEnumerable<string> filePathsToHash = fileSearchService.GetFiles(baseDirectory, pathsToSearch, pathsToExclude);
+                Dictionary<string, string> absolutePathHashes = await fileHashingService.GetFileHashes(filePathsToHash);
+
+                Dictionary<string, string> clientFileHashes = new(absolutePathHashes.Count, StringComparer.OrdinalIgnoreCase);
+                foreach (KeyValuePair<string, string> kvp in absolutePathHashes)
+                {
+                    string relativePath = Path.GetRelativePath(baseDirectory, kvp.Key);
+                    string normalizedKey = relativePath.Replace('\\', '/');
+
+                    clientFileHashes[normalizedKey] = kvp.Value;
+                }
+
+                Dictionary<string, ModSyncAction> result;
+
+                if (clientConfiguration.UseHeadlessWhitelist && PluginInfoHelper.IsHeadlessInstalled())
+                    result = ModSyncActionDecisionService.DecideOnActions(clientFileHashes, serverFileHashes, clientConfiguration.HeadlessWhitelist);
+                else
+                    result = ModSyncActionDecisionService.DecideOnActions(clientFileHashes, serverFileHashes);
+
+                return result;
             }
-
-            Dictionary<string, ModSyncAction> result = new(StringComparer.OrdinalIgnoreCase);
-
-            foreach (KeyValuePair<string, string> serverEntry in serverFileHashes)
+            catch (Exception ex)
             {
-                if (!clientFileHashes.ContainsKey(serverEntry.Key)
-                    && !IsFikaHeadlessFile(serverEntry.Key)
-                    && IsHeadlessWhitelisted(serverEntry, clientConfiguration.HeadlessWhitelist))
-                {
-                    result.Add(serverEntry.Key, ModSyncAction.Add);
-                }
+                simpleSptLogger.LogException(ex);
+
+                return [];
             }
-
-            foreach (KeyValuePair<string, string> clientEntry in clientFileHashes)
-            {
-                bool existsOnServer = serverFileHashes.TryGetValue(clientEntry.Key, out string? serverHash);
-
-                if (!existsOnServer)
-                {
-                    if (!IsFikaHeadlessFile(clientEntry.Key)
-                        && !IsModFile(clientEntry.Key)) // Prevent self-delete
-                    {
-                        result.Add(clientEntry.Key, ModSyncAction.Delete);
-                    }
-                }
-                else if (!string.Equals(serverHash, clientEntry.Value, StringComparison.OrdinalIgnoreCase))
-                {
-                    result.Add(clientEntry.Key, ModSyncAction.Update);
-                }
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            simpleSptLogger.LogException(ex);
-
-            return [];
-        }
+        });
     }
 
     private static async Task<ServerConfiguration> GetServerConfigurationAsync()
@@ -120,30 +100,5 @@ public class CheckUpdateService(
         Dictionary<string, string> serverFileHashes = new(serverHashesRaw, StringComparer.OrdinalIgnoreCase);
 
         return serverFileHashes;
-    }
-
-    private static bool IsModFile(string key)
-    {
-        return key.EndsWith(Constants.ModDllPath, StringComparison.OrdinalIgnoreCase)
-            || key.EndsWith(Constants.UpdaterExecutableName, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsFikaHeadlessFile(string key)
-    {
-        return key.EndsWith(Constants.FikaHeadlessDll, StringComparison.OrdinalIgnoreCase)
-            || key.EndsWith(Constants.LicenseHeadlessMd, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsHeadlessWhitelisted(KeyValuePair<string, string> entry, string[] headlessWhitelist)
-    {
-        if (PluginInfoHelper.IsFikaHeadlessInstalled())
-        {
-            Matcher matcher = new(StringComparison.OrdinalIgnoreCase);
-            matcher.AddIncludePatterns(headlessWhitelist);
-
-            return matcher.Match(entry.Key).HasMatches;
-        }
-
-        return true;
     }
 }

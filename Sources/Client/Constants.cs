@@ -20,6 +20,8 @@ public static class Constants
 
     public const string ModDllPath = "BepInEx/plugins/com.swiftxp.spt.themodfather/SwiftXP.SPT.TheModfather.Client.dll";
 
+    public const string MsGlobbingDllPath = "BepInEx/plugins/com.swiftxp.spt.themodfather/Microsoft.Extensions.FileSystemGlobbing.dll";
+
     public const string UpdaterExecutableName = "SwiftXP.SPT.TheModfather.Updater.exe";
 
     public const string DataDirectoryName = "TheModfather_Data";

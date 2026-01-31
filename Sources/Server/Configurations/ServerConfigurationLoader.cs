@@ -78,7 +78,7 @@ public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> log
 
         if (version < new Version(0, 3, 0))
         {
-            logger.Info("Migrating server configuration to latest version...");
+            logger.Info("Migrating 'The Modfather' server configuration to version 0.3.0...");
 
             config.SyncedPaths =
                 [.. config.SyncedPaths.Select(x => !LooksLikeAFile(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
@@ -86,14 +86,16 @@ public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> log
             config.ExcludedPaths =
                 [.. config.ExcludedPaths.Select(x => !LooksLikeAFile(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
 
-            config.ConfigVersion = AppMetadata.Version;
+            version = new Version(0, 3, 0);
+            config.ConfigVersion = "0.3.0";
             Save(config);
 
-            logger.Info($"Server configuration migrated to version {AppMetadata.Version}");
+            logger.Info($"'The Modfather' server configuration migrated to version 0.3.0");
         }
-        else if (version < new Version(1, 0, 1))
+
+        if (version < new Version(1, 0, 1))
         {
-            logger.Info("Migrating server configuration to latest version...");
+            logger.Info("Migrating 'The Modfather' server configuration to version 1.0.1...");
 
             config.ExcludedPaths =
                 [.. config.ExcludedPaths.Union([
@@ -103,10 +105,39 @@ public class ServerConfigurationLoader(ISptLogger<ServerConfigurationLoader> log
                     "BepInEx/plugins/SAIN/Presets/**/*"
                 ])];
 
+            version = new Version(1, 0, 1);
+            config.ConfigVersion = "1.0.1";
+            Save(config);
+
+            logger.Info($"'The Modfather' server configuration migrated to version 1.0.1");
+        }
+
+        if (version < new Version(1, 1, 0))
+        {
+            logger.Info("Migrating 'The Modfather' server configuration to version 1.1.0...");
+
+            if (config.ExcludedPaths.Contains("BepInEx/plugins/SAIN/BotTypes.json")
+                && config.ExcludedPaths.Contains("BepInEx/plugins/SAIN/Default Bot Config Values/**/*")
+                && config.ExcludedPaths.Contains("BepInEx/plugins/SAIN/Presets/**/*"))
+            {
+                config.ExcludedPaths =
+                    [.. config.ExcludedPaths.Except([
+                        "BepInEx/plugins/SAIN/BotTypes.json",
+                        "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+                        "BepInEx/plugins/SAIN/Presets/**/*"
+                    ])];
+
+                config.ExcludedPaths =
+                    [.. config.ExcludedPaths.Union([
+                        "BepInEx/plugins/SAIN/**/*.json",
+                    ])];
+            }
+
+            version = new Version(AppMetadata.Version);
             config.ConfigVersion = AppMetadata.Version;
             Save(config);
 
-            logger.Info($"Server configuration migrated to version {AppMetadata.Version}");
+            logger.Info($"'The Modfather' server configuration migrated to version {AppMetadata.Version}");
         }
     }
 

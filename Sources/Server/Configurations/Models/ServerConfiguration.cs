@@ -21,9 +21,7 @@ public sealed record ServerConfiguration
 
     private string[] _excludedPaths = [
         "**/*.log",
-        "BepInEx/plugins/SAIN/BotTypes.json",
-        "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
-        "BepInEx/plugins/SAIN/Presets/**/*",
+        "BepInEx/plugins/SAIN/**/*.json",
         "BepInEx/patchers/spt-prepatch.dll",
         "BepInEx/plugins/spt/**/*"
     ];
@@ -42,7 +40,8 @@ public sealed record ServerConfiguration
         return Array.ConvertAll(paths, p =>
         {
             string path = p.Replace('\\', '/');
-            return (path.StartsWith("./", StringComparison.InvariantCulture) ? path.Substring(2) : path).Trim().Trim('/');
+
+            return (path.StartsWith("./", StringComparison.OrdinalIgnoreCase) ? path.Substring(2) : path).Trim().Trim('/');
         });
     }
 }

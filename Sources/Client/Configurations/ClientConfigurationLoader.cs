@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
-using Sirenix.Utilities;
 using SwiftXP.SPT.Common.Loggers.Interfaces;
 using SwiftXP.SPT.Common.Runtime;
 using SwiftXP.SPT.TheModfather.Client.Configurations.Interfaces;
@@ -70,7 +69,7 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
 
         if (version < new Version(0, 3, 0))
         {
-            simpleSptLogger.LogInfo("Migrating client configuration to latest version...");
+            simpleSptLogger.LogInfo("Migrating 'The Modfather' client configuration to version 0.3.0...");
 
             config.ExcludedPaths =
                 [.. config.ExcludedPaths.Select(x => !LooksLikeAFile(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
@@ -78,14 +77,16 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
             config.HeadlessWhitelist =
                 [.. config.HeadlessWhitelist.Select(x => !LooksLikeAFile(x) && !x.Contains('*') && !x.Contains('?') ? $"{x.TrimEnd('/')}/**/*" : x)];
 
-            config.ConfigVersion = AppMetadata.Version;
+            version = new Version("0.3.0");
+            config.ConfigVersion = "0.3.0";
             Save(config);
 
-            simpleSptLogger.LogInfo($"Client configuration migrated to version {AppMetadata.Version}");
+            simpleSptLogger.LogInfo($"'The Modfather' client configuration migrated to version 0.3.0");
         }
-        else if (version < new Version(1, 0, 1))
+
+        if (version < new Version(1, 0, 1))
         {
-            simpleSptLogger.LogInfo("Migrating client configuration to latest version...");
+            simpleSptLogger.LogInfo("Migrating 'The Modfather' client configuration to version 1.0.1...");
 
             config.ExcludedPaths =
                 [.. config.ExcludedPaths.Union([
@@ -95,10 +96,51 @@ public class ClientConfigurationLoader(ISimpleSptLogger simpleSptLogger) : IClie
                     "BepInEx/plugins/SAIN/Presets/**/*"
                 ])];
 
+            version = new Version("1.0.1");
+            config.ConfigVersion = "1.0.1";
+            Save(config);
+
+            simpleSptLogger.LogInfo($"'The Modfather' client configuration migrated to version 1.0.1");
+        }
+
+        if (version < new Version(1, 1, 0))
+        {
+            simpleSptLogger.LogInfo("Migrating 'The Modfather'  client configuration to version 1.1.0...");
+
+            if (config.ExcludedPaths.Contains("BepInEx/plugins/SAIN/BotTypes.json")
+                && config.ExcludedPaths.Contains("BepInEx/plugins/SAIN/Default Bot Config Values/**/*")
+                && config.ExcludedPaths.Contains("BepInEx/plugins/SAIN/Presets/**/*"))
+            {
+                config.ExcludedPaths =
+                    [.. config.ExcludedPaths.Except([
+                        "BepInEx/plugins/SAIN/BotTypes.json",
+                        "BepInEx/plugins/SAIN/Default Bot Config Values/**/*",
+                        "BepInEx/plugins/SAIN/Presets/**/*"
+                    ])];
+
+                config.ExcludedPaths =
+                    [.. config.ExcludedPaths.Union([
+                        "BepInEx/plugins/SAIN/**/*.json",
+                    ])];
+            }
+
+            config.HeadlessWhitelist =
+                [.. config.HeadlessWhitelist.Union([
+                    "SwiftXP.SPT.TheModfather.Updater.exe",
+                    "BepInEx/plugins/com.swiftxp.spt.themodfather/**/*",
+                    "BepInEx/plugins/Fika/**/*",
+                    "BepInEx/plugins/MergeConsumables/**/*",
+                    "BepInEx/plugins/ozen-Foldables/**/*",
+                    "BepInEx/plugins/s8_SPT_PatchCRC32/**/*",
+                    "BepInEx/plugins/WTT-ClientCommonLib/**/*",
+                    "BepInEx/plugins/NerfBotGrenades.dll",
+                ])];
+
+            version = new Version(AppMetadata.Version);
             config.ConfigVersion = AppMetadata.Version;
             Save(config);
 
-            simpleSptLogger.LogInfo($"Client configuration migrated to version {AppMetadata.Version}");
+            simpleSptLogger.LogInfo($"'The Modfather' client configuration migrated to version {AppMetadata.Version}");
         }
     }
 
