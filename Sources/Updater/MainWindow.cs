@@ -1,16 +1,13 @@
 using SwiftXP.SPT.TheModfather.Updater.Helpers;
-using SwiftXP.SPT.TheModfather.Updater.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Updater.Utilities;
 
 namespace SwiftXP.SPT.TheModfather.Updater;
 
 public partial class MainWindow : Form
 {
-    private readonly IUpdaterService _updaterService;
 
-    public MainWindow(IUpdaterService updaterService)
+    public MainWindow()
     {
-        _updaterService = updaterService;
-
         InitializeComponent();
     }
 
@@ -22,7 +19,7 @@ public partial class MainWindow : Form
         StatusText.Left = (ClientSize.Width - StatusText.Width) / 2;
         ProgressBar.Left = (ClientSize.Width - ProgressBar.Width) / 2;
 
-        bool updated = await _updaterService.UpdateModsAsync();
+        bool updated = await UpdaterUtility.UpdateModsAsync();
         string updateStatus = "Update completed.";
 
         if (!updated)

@@ -1,5 +1,5 @@
 ﻿using SwiftXP.SPT.Common.Runtime;
-using SwiftXP.SPT.TheModfather.Updater.Controls;
+using SwiftXP.SPT.TheModfather.Updater.Windows.Forms;
 
 namespace SwiftXP.SPT.TheModfather.Updater
 {

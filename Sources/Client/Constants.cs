@@ -4,14 +4,21 @@ public static class Constants
 {
     public const string RoutePrefix = "/theModfather";
 
-    public const string RouteGetHashes = "/getFileHashes";
+    public const string RouteGetServerManifest = "/getServerManifest";
 
     public const string RouteGetFile = "/getFile";
 
-    public const string RouteGetServerConfiguration = "/getServerConfiguration";
+    public const string ClientExcludesFilePath = "TheModfather_Data/clientExcludes.json";
 
-    public const string ClientConfigurationPath = "TheModfather_Data/config.json";
+    public const string ClientManifestFilePath = "TheModfather_Data/clientManifest.json";
 
+    public const string StagingPath = "TheModfather_Data/Staging";
+
+    public const string FikaHeadlessModGuid = "com.fika.headless";
+
+    public const string DeleteInstructionExtension = ".delete";
+
+    /*
     public const string FikaHeadlessModGuid = "com.fika.headless";
 
     public const string FikaHeadlessDll = "Fika.Headless.dll";
@@ -28,5 +35,5 @@ public static class Constants
 
     public const string PayloadDirectoryName = "Payload";
 
-    public const string DeleteExtension = ".delete";
+    */
 }

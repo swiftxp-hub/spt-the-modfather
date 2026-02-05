@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 
 namespace SwiftXP.SPT.TheModfather.Updater.Helpers
 {

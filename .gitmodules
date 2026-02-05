@@ -1,3 +1,9 @@
 [submodule "Sources/Common"]
 	path = Sources/Common
 	url = git@github.com:swiftxp-hub/spt-common.git
+[submodule "Sources/Common.net9"]
+	path = Sources/Common.net9
+	url = git@github.com:swiftxp-hub/spt-common-net9.git
+[submodule "Sources/Common.netstandard"]
+	path = Sources/Common.netstandard
+	url = git@github.com:swiftxp-hub/spt-common-netstandard.git

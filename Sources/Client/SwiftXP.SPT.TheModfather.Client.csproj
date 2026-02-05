@@ -4,6 +4,9 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
 
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+
     <AssemblyName>SwiftXP.SPT.TheModfather.Client</AssemblyName>
     <Product>The Modfather</Product>
     <RestoreAdditionalProjectSources>
@@ -45,6 +48,7 @@
 
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/../Common/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common.netstandard/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,8 +61,8 @@
 
   <Target Name="GenerateLicenseFile" AfterTargets="Publish">
     <Message Text="Generating license file..." Importance="high" />
-
-    <Exec Command="$(LicenseToolPath) --input &quot;$(MSBuildProjectFullPath)&quot; --output --outfile &quot;$(PublishDir)SwiftXP.SPT.TheModfather.Client.LICENSES.txt&quot;" EnvironmentVariables="DOTNET_ROLL_FORWARD=Major" ConsoleToMSBuild="true" IgnoreExitCode="false" />
+    
+    <Exec Command="$(LicenseToolPath) --input &quot;$(MSBuildProjectFullPath)&quot; --output --outfile &quot;$(PublishDir)$(AssemblyName).LICENSES.txt&quot;" EnvironmentVariables="DOTNET_ROLL_FORWARD=Major" ConsoleToMSBuild="true" IgnoreExitCode="false" />
 
     <Message Text="License file generated." Importance="high" />
   </Target>
@@ -68,8 +72,9 @@
 
     <ItemGroup>
         <PublishedFiles Include="$(PublishDir)Microsoft.Extensions.FileSystemGlobbing.dll" />
-        <PublishedFiles Include="$(PublishDir)SwiftXP.SPT.TheModfather.Client.dll" />
-        <PublishedFiles Include="$(PublishDir)SwiftXP.SPT.TheModfather.Client.LICENSES.txt" />
+        
+        <PublishedFiles Include="$(PublishDir)$(AssemblyName).dll" />
+        <PublishedFiles Include="$(PublishDir)$(AssemblyName).LICENSES.txt" />
     </ItemGroup>
 
     <Copy SourceFiles="@(PublishedFiles)"

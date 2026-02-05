@@ -4,6 +4,9 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
 
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+
     <AssemblyName>SwiftXP.SPT.TheModfather.Server</AssemblyName>
     <Product>The Modfather</Product>
     <RootNamespace>SwiftXP.SPT.TheModfather.Server</RootNamespace>
@@ -25,9 +28,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Environment/IBaseDirectoryLocator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Environment/BaseDirectoryLocator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/IO/**/*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)/../Common/Runtime/**/*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)/../Common/Services/**/*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)/../Common/Extensions/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Utilities/**/*.cs" />
+
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common.net9/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>

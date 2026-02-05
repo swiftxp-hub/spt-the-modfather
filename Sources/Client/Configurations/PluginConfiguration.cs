@@ -19,15 +19,15 @@ public class PluginConfiguration
             "Checks for updates and prompts you to install them.",
             () =>
             {
-                Plugin.Instance!.StartCoroutine(Plugin.ModSyncService!.SyncMods((result) =>
-                {
-                    Plugin.ModSyncActions = result;
+                // Plugin.Instance!.StartCoroutine(Plugin.ModSyncService!.SyncMods((result) =>
+                // {
+                //     Plugin.ModSyncActions = result;
 
-                    if (Plugin.ModSyncActions != null && Plugin.ModSyncActions.Count > 0)
-                        Plugin.ModSyncService!.ShowUpdateNotification(Plugin.ModSyncActions);
-                    else
-                        NotificationsService.SendNotice("The modfather found no updates. Happy playing!");
-                }));
+                //     if (Plugin.ModSyncActions != null && Plugin.ModSyncActions.Count > 0)
+                //         Plugin.ModSyncService!.ShowUpdateNotification(Plugin.ModSyncActions);
+                //     else
+                //         NotificationsService.SendNotice("The modfather found no updates. Happy playing!");
+                // }));
             },
             0
         );

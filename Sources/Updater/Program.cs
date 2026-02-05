@@ -1,5 +1,5 @@
-using SwiftXP.SPT.TheModfather.Updater.Services;
-using SwiftXP.SPT.TheModfather.Updater.Services.Interfaces;
+using SwiftXP.SPT.TheModfather.Updater.Logging;
+using SwiftXP.SPT.TheModfather.Updater.Utilities;
 
 namespace SwiftXP.SPT.TheModfather.Updater
 {
@@ -11,23 +11,16 @@ namespace SwiftXP.SPT.TheModfather.Updater
         [STAThread]
         static async Task Main()
         {
-            LogService logService = new();
-            ProcessWatcher processWatcher = new(logService);
-            DeleteService deleteService = new(logService);
-            MoverService moverService = new(logService);
-
-            UpdaterService updaterService = new(logService, processWatcher, deleteService, moverService);
-
-            if (CommandLineParameterService.IsSilent())
+            if (CommandLineParameterUtility.IsSilent())
             {
-                logService.WriteMessage("Silent mode activated");
+                StaticLog.WriteMessage("Silent mode activated");
 
-                await updaterService.UpdateModsAsync();
+                await UpdaterUtility.UpdateModsAsync();
             }
             else
             {
                 ApplicationConfiguration.Initialize();
-                Application.Run(new MainWindow(updaterService));
+                Application.Run(new MainWindow());
             }
         }
     }
