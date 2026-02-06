@@ -28,23 +28,22 @@ public class UpdateManager(ISimpleSptLogger simpleSptLogger,
         float currentProgress = 0f;
 
         float stepsTaken = 0;
-        float totalSteps = 3;
+        float totalSteps = 4;
 
         progressCallback?.Report((currentProgress, $"Loading resources..."));
 
         string baseDirectory = clientState.BaseDirectory;
 
         ClientConfiguration clientConfiguration = clientState.ClientConfiguration;
-        ClientManifest? clientManifest = clientState.ClientManifest;
+        ClientManifest? clientManifest = clientState.ClientManifest ?? new ClientManifest(DateTimeOffset.UtcNow, RequestHandler.Host);
         ServerManifest serverManifest = clientState.ServerManifest;
+        FileHashBlacklist fileHashBlacklist = clientState.FileHashBlacklist;
 
-        bool isTemporaryClientManifest = false;
-        if (clientManifest == null)
-        {
-            progressCallback?.Report((currentProgress, $"Client-Manifest missing. Creating temporary manifest..."));
-            clientManifest = await BuildTempClientManifest(baseDirectory, serverManifest, cancellationToken);
-            isTemporaryClientManifest = true;
-        }
+        // if (clientManifest == null)
+        // {
+        //     progressCallback?.Report((currentProgress, $"Client-Manifest missing. Creating temporary manifest..."));
+        //     clientManifest = await BuildTempClientManifest(baseDirectory, serverManifest, cancellationToken);
+        // }
 
         currentProgress = ++stepsTaken / totalSteps;
         progressCallback?.Report((currentProgress, $"Processing server-manifest..."));
@@ -74,7 +73,7 @@ public class UpdateManager(ISimpleSptLogger simpleSptLogger,
                     syncActions.Add(new(serverFileManifest.RelativeFilePath, SyncActionType.Update,
                         serverFileManifest.Hash, serverFileManifest.SizeInBytes));
                 }
-                else if (!isTrackedInManifest || isTemporaryClientManifest)
+                else if (!isTrackedInManifest)
                 {
                     syncActions.Add(new(serverFileManifest.RelativeFilePath, SyncActionType.Adopt,
                         serverFileManifest.Hash, serverFileManifest.SizeInBytes));
@@ -116,31 +115,27 @@ public class UpdateManager(ISimpleSptLogger simpleSptLogger,
         }
 
         currentProgress = ++stepsTaken / totalSteps;
-        progressCallback?.Report((currentProgress, $"Finished update-check..."));
+        progressCallback?.Report((currentProgress, $"Processing blacklist..."));
 
-        return new(clientManifest!, syncActions, serverManifest);
-    }
-
-    private async Task<ClientManifest> BuildTempClientManifest(string baseDirectory, ServerManifest serverManifest,
-        CancellationToken cancellationToken = default)
-    {
-        ClientManifest clientManifest = new(DateTimeOffset.MinValue, RequestHandler.Host);
-
-        IEnumerable<FileInfo> fileInfos = baseDirectory.FindFilesByPattern(serverManifest.IncludePatterns, serverManifest.ExcludePatterns);
-
-        foreach (FileInfo fileInfo in fileInfos)
+        if (fileHashBlacklist.Any())
         {
-            string? hash = await xxHash128FileHasher.GetFileHashAsync(fileInfo, cancellationToken);
+            IEnumerable<FileInfo> filesInfos = Path.GetFullPath(Path.Combine(baseDirectory, Constants.BepInExDirectory))
+                .FindFilesByPattern(["**/*.dll"], ["cache/*"]);
 
-            ClientFileManifest clientFileManifest = new(
-                Path.GetRelativePath(baseDirectory, fileInfo.FullName),
-                hash ?? string.Empty,
-                fileInfo.Length,
-                fileInfo.LastWriteTimeUtc);
-
-            clientManifest.AddOrUpdateFile(clientFileManifest);
+            foreach (FileInfo fileInfo in filesInfos)
+            {
+                string? hash = await xxHash128FileHasher.GetFileHashAsync(fileInfo, CancellationToken.None);
+                if (hash != null && fileHashBlacklist.Contains(hash))
+                {
+                    string relativeFilePath = Path.GetRelativePath(baseDirectory, fileInfo.FullName).GetWebFriendlyPath();
+                    syncActions.Add(new(relativeFilePath, SyncActionType.Blacklist));
+                }
+            }
         }
 
-        return clientManifest;
+        currentProgress = ++stepsTaken / totalSteps;
+        progressCallback?.Report((currentProgress, $"Finished update-check..."));
+
+        return new(clientManifest!, syncActions);
     }
 }

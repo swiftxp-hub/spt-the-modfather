@@ -13,7 +13,11 @@ public class ClientManifestRepository(ISimpleSptLogger simpleSptLogger,
     IBaseDirectoryLocator baseDirectoryLocator,
     IJsonFileSerializer jsonFileSerializer) : IClientManifestRepository
 {
-    private readonly string _filePath = Path.GetFullPath(Path.Combine(baseDirectoryLocator.GetBaseDirectory(), Constants.ClientManifestFilePath));
+    private readonly string _filePath = Path.GetFullPath(Path.Combine(baseDirectoryLocator.GetBaseDirectory(),
+        Constants.ModfatherDataDirectory, Constants.ClientManifestFile));
+
+    private readonly string _stagingFilePath = Path.GetFullPath(Path.Combine(baseDirectoryLocator.GetBaseDirectory(),
+        Constants.ModfatherDataDirectory, Constants.StagingDirectory, Constants.ClientManifestFile));
 
     public async Task<ClientManifest?> LoadAsync(CancellationToken cancellationToken = default)
     {
@@ -37,5 +41,10 @@ public class ClientManifestRepository(ISimpleSptLogger simpleSptLogger,
     public async Task SaveAsync(ClientManifest config, CancellationToken cancellationToken = default)
     {
         await jsonFileSerializer.SerializeJsonFileAsync(_filePath, config, cancellationToken);
+    }
+
+    public async Task SaveToStagingAsync(ClientManifest config, CancellationToken cancellationToken = default)
+    {
+        await jsonFileSerializer.SerializeJsonFileAsync(_stagingFilePath, config, cancellationToken);
     }
 }

@@ -29,6 +29,8 @@ public class Plugin : BaseUnityPlugin
     private readonly UpdateUiState _uiState = new();
 
     private SimpleSptLogger? _simpleSptLogger;
+    private ClientConfigurationRepository? _clientConfigurationRepository;
+    private ClientManifestRepository? _clientManifestRepository;
     private UpdateManager? _updateManager;
     private SyncActionManager? _syncActionManager;
 
@@ -37,6 +39,7 @@ public class Plugin : BaseUnityPlugin
     private ClientState? _clientState;
     private SyncProposal? _syncProposal;
 
+
     private async Task Awake()
     {
         _simpleSptLogger = new(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_VERSION);
@@ -44,21 +47,23 @@ public class Plugin : BaseUnityPlugin
         BaseDirectoryLocator baseDirectoryLocator = new();
         JsonFileSerializer jsonFileSerializer = new();
 
-        ClientExcludesRepository clientExcludesRepo = new(_simpleSptLogger, baseDirectoryLocator, jsonFileSerializer);
-        ClientManifestRepository clientManifestRepo = new(_simpleSptLogger, baseDirectoryLocator, jsonFileSerializer);
-        ServerManifestRepository serverManifestRepository = new(_simpleSptLogger);
+        _clientConfigurationRepository = new(_simpleSptLogger, baseDirectoryLocator, jsonFileSerializer);
+        _clientManifestRepository = new(_simpleSptLogger, baseDirectoryLocator, jsonFileSerializer);
+        ServerManifestRepository serverManifestRepository = new();
+        FileHashBlacklistRepository fileHashBlacklistRepository = new();
 
         GameStartPatch.Initialize(Logger);
 
         _clientState = new(
             baseDirectoryLocator.GetBaseDirectory(),
-            await clientExcludesRepo.LoadOrCreateDefaultAsync(),
-            await clientManifestRepo.LoadAsync(),
-            await serverManifestRepository.LoadAsync()
+            await _clientConfigurationRepository.LoadOrCreateDefaultAsync(),
+            await _clientManifestRepository.LoadAsync(),
+            await serverManifestRepository.LoadAsync(),
+            await fileHashBlacklistRepository.LoadAsync()
         );
 
         _updateManager = new UpdateManager(_simpleSptLogger, new XxHash128FileHasher());
-        _syncActionManager = new SyncActionManager(_simpleSptLogger, jsonFileSerializer);
+        _syncActionManager = new SyncActionManager(_simpleSptLogger, _clientManifestRepository);
 
         _currentState = PluginState.CheckingForUpdates;
         _cancellationTokenSource = new CancellationTokenSource();
@@ -116,14 +121,42 @@ public class Plugin : BaseUnityPlugin
 
         try
         {
-            if (_uiState.SyncActions.Count == 0 || !_uiState.SyncActions.Any(x => x.IsSelected))
+            if (_syncProposal!.SyncActions.Any(x => !x.IsSelected))
+            {
+                List<string> newExcludePatterns = [.. _clientState!.ClientConfiguration.ExcludePatterns];
+
+                IEnumerable<SyncAction> rejectedActions = _syncProposal!.SyncActions.Where(x => !x.IsSelected);
+                foreach (SyncAction rejectedAction in rejectedActions)
+                {
+                    newExcludePatterns.Add(rejectedAction.RelativeFilePath);
+                }
+
+                if (!_syncProposal!.SyncActions.Any(x => x.IsSelected))
+                {
+                    await _clientConfigurationRepository!.SaveAsync(new()
+                    {
+                        ConfigVersion = _clientState!.ClientConfiguration.ConfigVersion,
+                        ExcludePatterns = [.. newExcludePatterns]
+                    }, _cancellationTokenSource!.Token);
+                }
+                else
+                {
+                    await _clientConfigurationRepository!.SaveToStagingAsync(new()
+                    {
+                        ConfigVersion = _clientState!.ClientConfiguration.ConfigVersion,
+                        ExcludePatterns = [.. newExcludePatterns]
+                    }, _cancellationTokenSource!.Token);
+                }
+            }
+
+            if (_uiState.SyncActions.Count == 0 || !_syncProposal!.SyncActions.Any(x => x.IsSelected == true))
             {
                 StartGame();
 
                 return;
             }
 
-            await _syncActionManager!.ProcessSyncActionsAsync(_clientState!, _uiState.SyncActions,
+            await _syncActionManager!.ProcessSyncActionsAsync(_clientState!, _syncProposal!,
                 new Progress<(float progress, string message)>(progress =>
                 {
                     _uiState.Progress = progress.progress;

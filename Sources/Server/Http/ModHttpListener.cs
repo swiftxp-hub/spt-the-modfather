@@ -21,7 +21,7 @@ public class ModHttpListener(ISptLogger<ModHttpListener> sptLogger,
 {
     private static readonly PathString s_pathGetServerManifest = new($"{Constants.RoutePrefix}{Constants.RouteGetServerManifest}");
     private static readonly PathString s_pathGetFile = new($"{Constants.RoutePrefix}{Constants.RouteGetFile}");
-    private static readonly PathString s_pathGetServerConfiguration = new($"{Constants.RoutePrefix}{Constants.RouteGetServerConfiguration}");
+    private static readonly PathString s_pathGetFileHashBlacklist = new($"{Constants.RoutePrefix}{Constants.RouteGetFileHashBlacklist}");
 
     public bool CanHandle(MongoId sessionId, HttpContext context)
     {
@@ -42,9 +42,9 @@ public class ModHttpListener(ISptLogger<ModHttpListener> sptLogger,
             {
                 await HandleGetFileAsync(context);
             }
-            else if (path.Equals(s_pathGetServerConfiguration, StringComparison.OrdinalIgnoreCase))
+            else if (path.Equals(s_pathGetFileHashBlacklist, StringComparison.OrdinalIgnoreCase))
             {
-                await HandleGetServerConfigurationAsync(context);
+                await HandleGetFileHashBlacklistAsync(context);
             }
             else
             {
@@ -105,11 +105,11 @@ public class ModHttpListener(ISptLogger<ModHttpListener> sptLogger,
         }
     }
 
-    private async Task HandleGetServerConfigurationAsync(HttpContext context)
+    private async Task HandleGetFileHashBlacklistAsync(HttpContext context)
     {
         ServerConfiguration serverConfiguration = await serverConfigurationRepository.LoadOrCreateDefaultAsync(context.RequestAborted);
 
-        await context.Response.WriteAsJsonAsync(serverConfiguration, context.RequestAborted);
+        await context.Response.WriteAsJsonAsync(serverConfiguration.FileHashBlacklist, context.RequestAborted);
     }
 
     private Task HandleUnknownRouteAsync(HttpContext context, PathString path)

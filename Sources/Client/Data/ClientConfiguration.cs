@@ -1,4 +1,5 @@
 using System;
+using SwiftXP.SPT.Common.Extensions.FileSystem;
 using SwiftXP.SPT.Common.Runtime;
 
 namespace SwiftXP.SPT.TheModfather.Server.Data;
@@ -22,7 +23,7 @@ public record class ClientConfiguration
 
         return Array.ConvertAll(paths, p =>
         {
-            string path = p.Replace('\\', '/');
+            string path = p.GetWebFriendlyPath();
 
             return (path.StartsWith("./", StringComparison.OrdinalIgnoreCase) ? path[2..] : path).Trim().Trim('/');
         });

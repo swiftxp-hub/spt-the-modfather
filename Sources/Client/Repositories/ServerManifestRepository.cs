@@ -3,18 +3,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SPT.Common.Http;
-using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.TheModfather.Client.Data;
 
 namespace SwiftXP.SPT.TheModfather.Client.Repositories;
 
-public class ServerManifestRepository(ISimpleSptLogger simpleSptLogger) : IServerManifestRepository
+public class ServerManifestRepository() : IServerManifestRepository
 {
     public async Task<ServerManifest> LoadAsync(CancellationToken cancellationToken = default)
     {
         string json = await RequestHandler.GetJsonAsync($"{Constants.RoutePrefix}{Constants.RouteGetServerManifest}");
-
-        simpleSptLogger.LogInfo($"Server-Manifest: {json}");
 
         if (string.IsNullOrWhiteSpace(json))
             throw new InvalidOperationException("Empty JSON-response");

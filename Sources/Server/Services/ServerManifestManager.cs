@@ -139,7 +139,7 @@ public class ServerManifestManager : IServerManifestManager, IDisposable
 
                     if (filesFound.TryGetValue(kvp.Key, out FileInfo? fileInfo))
                     {
-                        string webPath = GetWebFriendlyRelativePath(baseDirectory, kvp.Key);
+                        string webPath = Path.GetRelativePath(baseDirectory, kvp.Key).GetWebFriendlyPath();
                         newManifest.AddOrUpdateFile(new ServerFileManifest(webPath, kvp.Value, fileInfo.Length, fileInfo.LastWriteTimeUtc));
                     }
                 }
@@ -180,7 +180,7 @@ public class ServerManifestManager : IServerManifestManager, IDisposable
             await EnsureInitializedAsync(_globalCancellationTokenSource.Token);
 
             string baseDirectory = _baseDirectoryLocator.GetBaseDirectory();
-            string relativePath = GetWebFriendlyRelativePath(baseDirectory, fullPath);
+            string relativePath = Path.GetRelativePath(baseDirectory, fullPath).GetWebFriendlyPath();
 
             if (!IsFileRelevant(relativePath))
                 return;
@@ -295,7 +295,7 @@ public class ServerManifestManager : IServerManifestManager, IDisposable
             }
 
             string baseDirectory = _baseDirectoryLocator.GetBaseDirectory();
-            string relativePath = GetWebFriendlyRelativePath(baseDirectory, fullPath);
+            string relativePath = Path.GetRelativePath(baseDirectory, fullPath).GetWebFriendlyPath();
 
             if (_cachedServerManifest.ContainsFile(relativePath))
             {
@@ -317,8 +317,8 @@ public class ServerManifestManager : IServerManifestManager, IDisposable
         await EnsureInitializedAsync(_globalCancellationTokenSource.Token);
 
         string baseDirectory = _baseDirectoryLocator.GetBaseDirectory();
-        string oldRelative = GetWebFriendlyRelativePath(baseDirectory, oldPath);
-        string newRelative = GetWebFriendlyRelativePath(baseDirectory, newPath);
+        string oldRelative = Path.GetRelativePath(baseDirectory, oldPath).GetWebFriendlyPath();
+        string newRelative = Path.GetRelativePath(baseDirectory, newPath).GetWebFriendlyPath();
 
         string? existingHash = null;
 
@@ -344,9 +344,6 @@ public class ServerManifestManager : IServerManifestManager, IDisposable
 
     private bool IsFileRelevant(string relativePath)
         => _matcher?.Match(relativePath).HasMatches ?? false;
-
-    private static string GetWebFriendlyRelativePath(string baseDirectory, string fullPath)
-        => Path.GetRelativePath(baseDirectory, fullPath).Replace('\\', '/');
 
     public void Dispose()
     {

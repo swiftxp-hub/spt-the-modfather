@@ -9,11 +9,15 @@ using SwiftXP.SPT.TheModfather.Server.Data;
 
 namespace SwiftXP.SPT.TheModfather.Client.Repositories;
 
-public class ClientExcludesRepository(ISimpleSptLogger simpleSptLogger,
+public class ClientConfigurationRepository(ISimpleSptLogger simpleSptLogger,
     IBaseDirectoryLocator baseDirectoryLocator,
     IJsonFileSerializer jsonFileSerializer) : IClientConfigurationRepository
 {
-    private readonly string _filePath = Path.GetFullPath(Path.Combine(baseDirectoryLocator.GetBaseDirectory(), Constants.ClientConfigurationFilePath));
+    private readonly string _filePath = Path.GetFullPath(Path.Combine(baseDirectoryLocator.GetBaseDirectory(),
+        Constants.ModfatherDataDirectory, Constants.ClientConfigurationFile));
+
+    private readonly string _stagingFilePath = Path.GetFullPath(Path.Combine(baseDirectoryLocator.GetBaseDirectory(),
+        Constants.ModfatherDataDirectory, Constants.StagingDirectory, Constants.ClientConfigurationFile));
 
     public async Task<ClientConfiguration> LoadOrCreateDefaultAsync(CancellationToken cancellationToken = default)
     {
@@ -43,5 +47,10 @@ public class ClientExcludesRepository(ISimpleSptLogger simpleSptLogger,
     public async Task SaveAsync(ClientConfiguration config, CancellationToken cancellationToken = default)
     {
         await jsonFileSerializer.SerializeJsonFileAsync(_filePath, config, cancellationToken);
+    }
+
+    public async Task SaveToStagingAsync(ClientConfiguration config, CancellationToken cancellationToken = default)
+    {
+        await jsonFileSerializer.SerializeJsonFileAsync(_stagingFilePath, config, cancellationToken);
     }
 }

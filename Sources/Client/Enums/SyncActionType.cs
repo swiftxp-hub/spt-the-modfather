@@ -10,5 +10,7 @@ public enum SyncActionType
 
     Adopt,
 
-    Untrack
+    Untrack,
+
+    Blacklist
 }

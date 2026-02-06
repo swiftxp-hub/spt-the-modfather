@@ -7,37 +7,39 @@ using System.Threading.Tasks;
 using SPT.Common.Http;
 using SwiftXP.SPT.Common.Extensions.FileSystem;
 using SwiftXP.SPT.Common.Http;
-using SwiftXP.SPT.Common.Json;
 using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.TheModfather.Client.Contexts;
 using SwiftXP.SPT.TheModfather.Client.Data;
 using SwiftXP.SPT.TheModfather.Client.Enums;
+using SwiftXP.SPT.TheModfather.Client.Repositories;
 using SwiftXP.SPT.TheModfather.Server.Data;
 
 namespace SwiftXP.SPT.TheModfather.Client.Services;
 
 public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
-    IJsonFileSerializer jsonFileSerializer) : ISyncActionManager
+    ClientManifestRepository clientManifestRepository) : ISyncActionManager
 {
-    public async Task ProcessSyncActionsAsync(ClientState clientState, IReadOnlyList<SyncAction> syncActions,
+    public async Task ProcessSyncActionsAsync(ClientState clientState, SyncProposal syncProposal,
         Progress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
     {
         string baseDirectory = clientState.BaseDirectory;
-        string stagingDirectory = Path.GetFullPath(Path.Combine(baseDirectory, Constants.StagingDirectory));
+        string stagingDirectory = Path.GetFullPath(Path.Combine(baseDirectory, Constants.ModfatherDataDirectory, Constants.StagingDirectory));
 
         if (!stagingDirectory.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Invalid staging path");
 
+        IReadOnlyList<SyncAction> syncActions = syncProposal.SyncActions;
+
         ClientConfiguration clientConfiguration = clientState.ClientConfiguration;
-        ClientManifest currentClientManifest = clientState.ClientManifest!;
+        ClientManifest currentClientManifest = syncProposal.ClientManifest;
+        List<string> excludePatterns = [.. clientConfiguration.ExcludePatterns];
 
         ClientManifest newClientManifest = new(DateTimeOffset.UtcNow, RequestHandler.Host);
         ServerManifest serverManifest = clientState.ServerManifest;
 
         float updateProgress = 0f;
-
-        int actionsExecuted = 0;
-        int totalActions = 1 + syncActions.Count;
+        float actionsExecuted = 0;
+        float totalActions = 1 + syncActions.Count;
 
         CleanUpStagingDirectory(stagingDirectory);
         updateProgress = ++actionsExecuted / totalActions;
@@ -46,12 +48,8 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!syncAction.IsSelected)
-            {
-                clientConfiguration.ExcludePatterns = [.. clientConfiguration.ExcludePatterns, syncAction.RelativeFilePath];
-
+            if (syncAction.IsSelected == false)
                 continue;
-            }
 
             switch (syncAction.Type)
             {
@@ -62,6 +60,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
                     break;
 
                 case SyncActionType.Delete:
+                case SyncActionType.Blacklist:
                     CreateDeleteInstruction(stagingDirectory, syncAction.RelativeFilePath);
 
                     break;
@@ -106,8 +105,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
             }
         }
 
-        await jsonFileSerializer.SerializeJsonFileAsync(Path.Combine(stagingDirectory, "clientExcludes.json.new"), clientConfiguration.ExcludePatterns, cancellationToken);
-        await jsonFileSerializer.SerializeJsonFileAsync(Path.Combine(stagingDirectory, "clientManifest.json.new"), newClientManifest, cancellationToken);
+        await clientManifestRepository.SaveToStagingAsync(newClientManifest, cancellationToken);
     }
 
     private static void CleanUpStagingDirectory(string stagingPath)
@@ -156,8 +154,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
 
     private static void CreateDeleteInstruction(string stagingDirectory, string relativeFilePath)
     {
-        string normalizedPath = relativeFilePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
-        string instructionPath = Path.Combine(stagingDirectory, normalizedPath + Constants.DeleteInstructionExtension);
+        string instructionPath = Path.GetFullPath(Path.Combine(stagingDirectory, relativeFilePath + Constants.DeleteInstructionExtension));
 
         string? directory = Path.GetDirectoryName(instructionPath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))

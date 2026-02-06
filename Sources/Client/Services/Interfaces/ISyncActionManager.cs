@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SwiftXP.SPT.TheModfather.Client.Contexts;
@@ -9,6 +8,6 @@ namespace SwiftXP.SPT.TheModfather.Client.Services;
 
 public interface ISyncActionManager
 {
-    Task ProcessSyncActionsAsync(ClientState clientState, IReadOnlyList<SyncAction> syncActions,
+    Task ProcessSyncActionsAsync(ClientState clientState, SyncProposal syncProposal,
         Progress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default);
 }

@@ -145,8 +145,6 @@ namespace SwiftXP.SPT.TheModfather.Client.UI
             float headerH = 26f;
             Rect headerRect = new Rect(rect.x, rect.y, rect.width, headerH);
 
-            // Konvertieren zu List<SyncAction> für ForEach Support, falls IReadOnlyList das nicht hat
-            // Oder wir ändern die Signatur in DrawListHeader auch auf IReadOnlyList
             DrawListHeader(headerRect, items);
 
             float itemH = 32f;
@@ -176,7 +174,14 @@ namespace SwiftXP.SPT.TheModfather.Client.UI
 
             if (GUI.Button(new Rect(rect.x + rect.width - bW - 5, rect.y + 2, bW, 22), "Select None"))
             {
-                foreach (SyncAction item in items) item.IsSelected = false;
+                foreach (SyncAction item in items)
+                {
+                    // Nur abwählen, wenn NICHT Blacklisted
+                    if (item.Type != SyncActionType.Blacklist)
+                    {
+                        item.IsSelected = false;
+                    }
+                }
             }
 
             if (GUI.Button(new Rect(rect.x + rect.width - (bW * 2) - 10, rect.y + 2, bW, 22), "Select All"))
@@ -189,19 +194,51 @@ namespace SwiftXP.SPT.TheModfather.Client.UI
         {
             if (!isEven) DrawRect(rect, new Color(1, 1, 1, 0.03f));
             Vector2 scaledMouse = Event.current.mousePosition / s_scale;
+
+            // Hover Overlay
             if (rect.Contains(scaledMouse)) DrawRect(rect, ModfatherUIColors.HoverOverlay);
+
             float centerY = rect.y + (rect.height - 16) / 2;
             Rect checkRect = new Rect(rect.x + 8, centerY, 16, 16);
             DrawRect(checkRect, ModfatherUIColors.WindowBorder);
-            if (item.IsSelected) DrawRect(new Rect(checkRect.x + 3, checkRect.y + 3, 10, 10), ModfatherUIColors.AccentOrange);
+
+            // Prüfen ob Blacklisted
+            bool isBlacklisted = item.Type == SyncActionType.Blacklist;
+
+            // Auswahlstatus erzwingen/zeichnen
+            if (isBlacklisted)
+            {
+                // Sicherstellen, dass Blacklisted immer ausgewählt ist
+                if (!item.IsSelected) item.IsSelected = true;
+                // Graues "Locked" Quadrat
+                DrawRect(new Rect(checkRect.x + 3, checkRect.y + 3, 10, 10), Color.gray);
+            }
+            else if (item.IsSelected)
+            {
+                // Normales oranges Quadrat
+                DrawRect(new Rect(checkRect.x + 3, checkRect.y + 3, 10, 10), ModfatherUIColors.AccentOrange);
+            }
+
+            // Typ Badge
             Color typeCol = GetTypeColor(item.Type);
             Rect badgeRect = new Rect(rect.x + 32, centerY - 1, 60, 18);
             DrawRect(badgeRect, new Color(typeCol.r, typeCol.g, typeCol.b, 0.15f));
             GUIStyle typeStyle = new(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 10, fontStyle = FontStyle.Bold, normal = { textColor = typeCol } };
             GUI.Label(badgeRect, item.Type.ToString().ToUpper(CultureInfo.InvariantCulture), typeStyle);
-            GUIStyle pathStyle = new(GUI.skin.label) { alignment = TextAnchor.MiddleLeft, fontSize = 13, fontStyle = FontStyle.Normal, normal = { textColor = item.IsSelected ? ModfatherUIColors.TextWhite : Color.gray } };
+
+            // Dateipfad Text (etwas grauer wenn blacklisted)
+            Color textColor = isBlacklisted ? Color.gray : (item.IsSelected ? ModfatherUIColors.TextWhite : Color.gray);
+            GUIStyle pathStyle = new(GUI.skin.label) { alignment = TextAnchor.MiddleLeft, fontSize = 13, fontStyle = FontStyle.Normal, normal = { textColor = textColor } };
             GUI.Label(new Rect(rect.x + 100, rect.y, rect.width - 100, rect.height), item.RelativeFilePath, pathStyle);
-            if (GUI.Button(rect, string.Empty, GUIStyle.none)) { item.IsSelected = !item.IsSelected; }
+
+            // Klick-Bereich (Nur aktiv wenn NICHT Blacklisted)
+            if (!isBlacklisted)
+            {
+                if (GUI.Button(rect, string.Empty, GUIStyle.none))
+                {
+                    item.IsSelected = !item.IsSelected;
+                }
+            }
         }
 
         private static void DrawWindowFrame(Rect rect)
@@ -264,6 +301,7 @@ namespace SwiftXP.SPT.TheModfather.Client.UI
                 SyncActionType.Delete => new Color(0.9f, 0.4f, 0.4f),
                 SyncActionType.Update => new Color(0.4f, 0.6f, 1f),
                 SyncActionType.Adopt => new Color(0.8f, 0.8f, 0.4f),
+                SyncActionType.Blacklist => new Color(0.5f, 0.5f, 0.5f), // Grau für Blacklisted
                 _ => Color.gray
             };
         }

@@ -6,13 +6,19 @@ public static class Constants
 
     public const string RouteGetServerManifest = "/getServerManifest";
 
+    public const string RouteGetFileHashBlacklist = "/getFileHashBlacklist";
+
     public const string RouteGetFile = "/getFile";
 
-    public const string ClientConfigurationFilePath = "TheModfather_Data/clientConfiguration.json";
+    public const string BepInExDirectory = "BepInEx";
 
-    public const string ClientManifestFilePath = "TheModfather_Data/clientManifest.json";
+    public const string ModfatherDataDirectory = "TheModfather_Data";
 
-    public const string StagingDirectory = "TheModfather_Data/Staging";
+    public const string StagingDirectory = "Staging";
+
+    public const string ClientConfigurationFile = "clientConfiguration.json";
+
+    public const string ClientManifestFile = "clientManifest.json";
 
     public const string FikaHeadlessModGuid = "com.fika.headless";
 

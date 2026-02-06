@@ -4,5 +4,4 @@ namespace SwiftXP.SPT.TheModfather.Client.Data;
 
 public record SyncProposal(
     ClientManifest ClientManifest,
-    IReadOnlyList<SyncAction> SyncActions,
-    ServerManifest ServerManifest);
+    IReadOnlyList<SyncAction> SyncActions);

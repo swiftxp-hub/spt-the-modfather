@@ -6,4 +6,5 @@ namespace SwiftXP.SPT.TheModfather.Client.Contexts;
 public record ClientState(string BaseDirectory,
     ClientConfiguration ClientConfiguration,
     ClientManifest? ClientManifest,
-    ServerManifest ServerManifest);
+    ServerManifest ServerManifest,
+    FileHashBlacklist FileHashBlacklist);

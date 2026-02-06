@@ -9,4 +9,6 @@ public interface IClientConfigurationRepository
     Task<ClientConfiguration> LoadOrCreateDefaultAsync(CancellationToken cancellationToken);
 
     Task SaveAsync(ClientConfiguration config, CancellationToken cancellationToken);
+
+    Task SaveToStagingAsync(ClientConfiguration config, CancellationToken cancellationToken);
 }

@@ -6,7 +6,9 @@ namespace SwiftXP.SPT.TheModfather.Client.Repositories;
 
 public interface IClientManifestRepository
 {
-    Task<ClientManifest?> LoadAsync(CancellationToken cancellationToken = default);
+    Task<ClientManifest?> LoadAsync(CancellationToken cancellationToken);
 
-    Task SaveAsync(ClientManifest config, CancellationToken cancellationToken = default);
+    Task SaveAsync(ClientManifest config, CancellationToken cancellationToken);
+
+    Task SaveToStagingAsync(ClientManifest config, CancellationToken cancellationToken);
 }

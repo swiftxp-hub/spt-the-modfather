@@ -10,7 +10,7 @@ public static class Constants
 
     public const string RouteGetFile = "/getFile";
 
-    public const string RouteGetServerConfiguration = "/getServerConfiguration";
+    public const string RouteGetFileHashBlacklist = "/getFileHashBlacklist";
 
     public const string ServerConfigurationDirectory = "SPT/user/mods/com.swiftxp.spt.themodfather/config";
 

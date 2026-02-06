@@ -1,4 +1,5 @@
 using System;
+using SwiftXP.SPT.Common.Extensions.FileSystem;
 using SwiftXP.SPT.Common.Runtime;
 
 namespace SwiftXP.SPT.TheModfather.Server.Data;
@@ -32,6 +33,10 @@ public record class ServerConfiguration
         set => _excludePatterns = NormalizePaths(value);
     }
 
+    public string[] FileHashBlacklist { get; set; } = [
+        "919ca65d49641a2e09fb9e373b74d0a0"
+    ];
+
     private static string[] NormalizePaths(string[]? paths)
     {
         if (paths is null)
@@ -39,7 +44,7 @@ public record class ServerConfiguration
 
         return Array.ConvertAll(paths, p =>
         {
-            string path = p.Replace('\\', '/');
+            string path = p.GetWebFriendlyPath();
 
             return (path.StartsWith("./", StringComparison.OrdinalIgnoreCase) ? path[2..] : path).Trim().Trim('/');
         });
