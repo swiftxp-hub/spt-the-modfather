@@ -1,8 +1,6 @@
-﻿using System.Runtime.InteropServices;
-
 namespace SwiftXP.SPT.TheModfather.Updater
 {
-    internal static class Program
+    class Program
     {
         // =============================================================
         //               WINDOWS API IMPORT (P/Invoke)
@@ -48,7 +46,7 @@ namespace SwiftXP.SPT.TheModfather.Updater
         const int SM_CYSCREEN = 1; // Screen Height
 
         // Konstanten für TopMost
-        static readonly IntPtr s_hWND_TOPMOST = new IntPtr(-1); // Handle für "Ganz oben"
+        static readonly IntPtr HWND_TOPMOST = new IntPtr(-1); // Handle für "Ganz oben"
         const uint SWP_NOSIZE = 0x0001;     // Größe beibehalten
         const uint SWP_NOMOVE = 0x0002;     // Position beibehalten (wird hier ignoriert, da MoveWindow das macht)
         const uint SWP_SHOWWINDOW = 0x0040; // Fenster anzeigen
@@ -108,7 +106,7 @@ namespace SwiftXP.SPT.TheModfather.Updater
             IntPtr consoleHandle = GetConsoleWindow();
 
             // Setzt das Fenster auf TopMost (-1), ignoriert aber Positionsargumente (SWP_NOMOVE | SWP_NOSIZE)
-            SetWindowPos(consoleHandle, s_hWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            SetWindowPos(consoleHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
         }
     }
 }

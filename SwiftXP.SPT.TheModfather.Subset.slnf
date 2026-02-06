@@ -1,9 +1,0 @@
-{
-  "solution": {
-    "path": "SwiftXP.SPT.TheModfather.slnx",
-    "projects": [
-      "Sources/Client/SwiftXP.SPT.TheModfather.Client.csproj",
-      "Sources/Server/SwiftXP.SPT.TheModfather.Server.csproj"
-    ]
-  }
-}
