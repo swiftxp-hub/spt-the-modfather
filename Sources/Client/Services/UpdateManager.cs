@@ -4,42 +4,47 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.FileSystemGlobbing;
-using Newtonsoft.Json;
 using SPT.Common.Http;
+using SwiftXP.SPT.Common.Extensions.FileSystem;
 using SwiftXP.SPT.Common.IO.Hashing;
-using SwiftXP.SPT.Common.Loggers.Interfaces;
+using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.TheModfather.Client.Contexts;
 using SwiftXP.SPT.TheModfather.Client.Data;
 using SwiftXP.SPT.TheModfather.Client.Enums;
+using SwiftXP.SPT.TheModfather.Server.Data;
 
 namespace SwiftXP.SPT.TheModfather.Client.Services;
 
-public class UpdateManager(ISimpleSptLogger simpleSptLogger, IXxHash128FileHasher xxHash128FileHasher)
+public class UpdateManager(ISimpleSptLogger simpleSptLogger,
+    IXxHash128FileHasher xxHash128FileHasher) : IUpdateManager
 {
-    public async Task<IReadOnlyList<SyncAction>> GetSyncActionsAsync(
-        IPluginContext pluginContext,
+    public async Task<SyncProposal> GetSyncActionsAsync(
+        ClientState clientState,
         IProgress<(float progress, string message)>? progressCallback,
-        CancellationToken? cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         List<SyncAction> syncActions = [];
 
         float currentProgress = 0f;
 
-        int stepsTaken = 0;
-        int totalSteps = 4;
+        float stepsTaken = 0;
+        float totalSteps = 3;
 
-        progressCallback?.Report((currentProgress, $"Loading client resources..."));
+        progressCallback?.Report((currentProgress, $"Loading resources..."));
 
-        string baseDirectory = pluginContext.BaseDirectory;
+        string baseDirectory = clientState.BaseDirectory;
 
-        ClientExcludes clientExcludes = pluginContext.ClientExcludes;
-        ClientManifest? clientManifest = pluginContext.ClientManifest;
+        ClientConfiguration clientConfiguration = clientState.ClientConfiguration;
+        ClientManifest? clientManifest = clientState.ClientManifest;
+        ServerManifest serverManifest = clientState.ServerManifest;
 
-        currentProgress = ++stepsTaken / totalSteps;
-        progressCallback?.Report((currentProgress, $"Loading server resources..."));
-
-        ServerManifest serverManifest = await GetServerManifest();
+        bool isTemporaryClientManifest = false;
+        if (clientManifest == null)
+        {
+            progressCallback?.Report((currentProgress, $"Client-Manifest missing. Creating temporary manifest..."));
+            clientManifest = await BuildTempClientManifest(baseDirectory, serverManifest, cancellationToken);
+            isTemporaryClientManifest = true;
+        }
 
         currentProgress = ++stepsTaken / totalSteps;
         progressCallback?.Report((currentProgress, $"Processing server-manifest..."));
@@ -50,13 +55,15 @@ public class UpdateManager(ISimpleSptLogger simpleSptLogger, IXxHash128FileHashe
         {
             processedPaths.Add(serverFileManifest.RelativeFilePath);
 
-            if (IsExcluded(serverFileManifest.RelativeFilePath, clientExcludes))
+            if (serverFileManifest.RelativeFilePath.IsExcludedByPatterns(clientConfiguration.ExcludePatterns))
             {
                 simpleSptLogger.LogInfo($"Ignoring server-update for file (excluded): {serverFileManifest.RelativeFilePath}");
                 continue;
             }
 
-            FileInfo? fileInfo = GetFileInfo(baseDirectory, serverFileManifest.RelativeFilePath);
+            string filePath = Path.Combine(baseDirectory, serverFileManifest.RelativeFilePath);
+
+            FileInfo? fileInfo = filePath.GetFileInfo();
             bool isTrackedInManifest = clientManifest?.Files.Any(x => x.RelativeFilePath == serverFileManifest.RelativeFilePath) ?? false;
 
             if (fileInfo != null)
@@ -64,16 +71,19 @@ public class UpdateManager(ISimpleSptLogger simpleSptLogger, IXxHash128FileHashe
                 if (fileInfo.Length != serverFileManifest.SizeInBytes
                     || (await xxHash128FileHasher.GetFileHashAsync(fileInfo, CancellationToken.None)) != serverFileManifest.Hash)
                 {
-                    syncActions.Add(new() { RelativeFilePath = serverFileManifest.RelativeFilePath, Type = SyncActionType.Update });
+                    syncActions.Add(new(serverFileManifest.RelativeFilePath, SyncActionType.Update,
+                        serverFileManifest.Hash, serverFileManifest.SizeInBytes));
                 }
-                else if (!isTrackedInManifest)
+                else if (!isTrackedInManifest || isTemporaryClientManifest)
                 {
-                    syncActions.Add(new() { RelativeFilePath = serverFileManifest.RelativeFilePath, Type = SyncActionType.Adopt });
+                    syncActions.Add(new(serverFileManifest.RelativeFilePath, SyncActionType.Adopt,
+                        serverFileManifest.Hash, serverFileManifest.SizeInBytes));
                 }
             }
             else
             {
-                syncActions.Add(new() { RelativeFilePath = serverFileManifest.RelativeFilePath, Type = SyncActionType.Add });
+                syncActions.Add(new(serverFileManifest.RelativeFilePath, SyncActionType.Add,
+                    serverFileManifest.Hash, serverFileManifest.SizeInBytes));
             }
         }
 
@@ -85,70 +95,52 @@ public class UpdateManager(ISimpleSptLogger simpleSptLogger, IXxHash128FileHashe
             if (processedPaths.Contains(clientFileManifest.RelativeFilePath))
                 continue;
 
-            if (IsExcluded(clientFileManifest.RelativeFilePath, clientExcludes))
+            if (clientFileManifest.RelativeFilePath.IsExcludedByPatterns(clientConfiguration.ExcludePatterns))
             {
-                syncActions.Add(new() { RelativeFilePath = clientFileManifest.RelativeFilePath, Type = SyncActionType.Untrack });
+                syncActions.Add(new(clientFileManifest.RelativeFilePath, SyncActionType.Untrack));
 
                 continue;
             }
 
-            FileInfo? fileInfo = GetFileInfo(baseDirectory, clientFileManifest.RelativeFilePath);
+            string filePath = Path.Combine(baseDirectory, clientFileManifest.RelativeFilePath);
+            FileInfo? fileInfo = filePath.GetFileInfo();
+
             if (fileInfo != null)
             {
-                syncActions.Add(new() { RelativeFilePath = clientFileManifest.RelativeFilePath, Type = SyncActionType.Delete });
+                syncActions.Add(new(clientFileManifest.RelativeFilePath, SyncActionType.Delete));
             }
             else
             {
-                syncActions.Add(new() { RelativeFilePath = clientFileManifest.RelativeFilePath, Type = SyncActionType.Untrack });
+                syncActions.Add(new(clientFileManifest.RelativeFilePath, SyncActionType.Untrack));
             }
         }
 
         currentProgress = ++stepsTaken / totalSteps;
         progressCallback?.Report((currentProgress, $"Finished update-check..."));
 
-        return syncActions;
+        return new(clientManifest!, syncActions, serverManifest);
     }
 
-    private async Task<ServerManifest> GetServerManifest()
+    private async Task<ClientManifest> BuildTempClientManifest(string baseDirectory, ServerManifest serverManifest,
+        CancellationToken cancellationToken = default)
     {
-        string json = await RequestHandler.GetJsonAsync($"{Constants.RoutePrefix}{Constants.RouteGetServerManifest}");
+        ClientManifest clientManifest = new(DateTimeOffset.MinValue, RequestHandler.Host);
 
-        simpleSptLogger.LogInfo($"Server-Manifest: {json}");
+        IEnumerable<FileInfo> fileInfos = baseDirectory.FindFilesByPattern(serverManifest.IncludePatterns, serverManifest.ExcludePatterns);
 
-        if (string.IsNullOrWhiteSpace(json))
-            throw new InvalidOperationException("Empty JSON-response");
-
-        ServerManifest? serverManifest = JsonConvert.DeserializeObject<ServerManifest>(json)
-            ?? throw new InvalidOperationException("JSON-response could not be deserialized");
-
-        return serverManifest;
-    }
-
-    private static FileInfo? GetFileInfo(string baseDirectory, string relativeFilePath)
-    {
-        if (string.IsNullOrWhiteSpace(relativeFilePath))
-            return null;
-
-        string requestedFullPath;
-        try
+        foreach (FileInfo fileInfo in fileInfos)
         {
-            requestedFullPath = Path.GetFullPath(Path.Combine(baseDirectory, relativeFilePath));
-        }
-        catch (Exception)
-        {
-            return null;
+            string? hash = await xxHash128FileHasher.GetFileHashAsync(fileInfo, cancellationToken);
+
+            ClientFileManifest clientFileManifest = new(
+                Path.GetRelativePath(baseDirectory, fileInfo.FullName),
+                hash ?? string.Empty,
+                fileInfo.Length,
+                fileInfo.LastWriteTimeUtc);
+
+            clientManifest.AddOrUpdateFile(clientFileManifest);
         }
 
-        FileInfo fileInfo = new(requestedFullPath);
-
-        return fileInfo.Exists ? fileInfo : null;
-    }
-
-    private static bool IsExcluded(string relativePath, ClientExcludes clientExcludes)
-    {
-        Matcher matcher = new(StringComparison.OrdinalIgnoreCase);
-        matcher.AddIncludePatterns(clientExcludes);
-
-        return matcher.Match(relativePath).HasMatches;
+        return clientManifest;
     }
 }

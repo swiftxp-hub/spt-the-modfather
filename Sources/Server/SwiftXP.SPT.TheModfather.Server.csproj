@@ -28,7 +28,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Environment/IBaseDirectoryLocator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Environment/Interfaces/IBaseDirectoryLocator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)/../Common/Environment/BaseDirectoryLocator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)/../Common/IO/**/*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)/../Common/Runtime/**/*.cs" />
@@ -40,9 +40,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SPTarkov.Common" Version="4.0.11" />
-    <PackageReference Include="SPTarkov.DI" Version="4.0.11" />
-    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.11" />
+    <PackageReference Include="SPTarkov.Common" Version="4.0.12" />
+    <PackageReference Include="SPTarkov.DI" Version="4.0.12" />
+    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.12" />
     
     <PackageReference Include="System.IO.Hashing" Version="9.0.9">
       <ExcludeAssets>runtime</ExcludeAssets>

@@ -3,28 +3,11 @@ using SwiftXP.SPT.Common.Runtime;
 
 namespace SwiftXP.SPT.TheModfather.Server.Data;
 
-public record class ServerConfiguration
+public record class ClientConfiguration
 {
     public string ConfigVersion { get; set; } = AppMetadata.Version;
 
-    private string[] _includePatterns = [
-        "SwiftXP.SPT.TheModfather.Updater.exe",
-        "BepInEx/patchers/**/*",
-        "BepInEx/plugins/**/*"
-    ];
-
-    public string[] IncludePatterns
-    {
-        get => _includePatterns;
-        set => _includePatterns = NormalizePaths(value);
-    }
-
-    private string[] _excludePatterns = [
-        "**/*.log",
-        "BepInEx/plugins/SAIN/**/*.json",
-        "BepInEx/patchers/spt-prepatch.dll",
-        "BepInEx/plugins/spt/**/*"
-    ];
+    private string[] _excludePatterns = [];
 
     public string[] ExcludePatterns
     {

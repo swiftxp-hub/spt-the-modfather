@@ -2,7 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SwiftXP.SPT.TheModfather.Server.Data;
 
-namespace SwiftXP.SPT.TheModfather.Server.States;
+namespace SwiftXP.SPT.TheModfather.Server.Services;
 
 public interface IServerManifestManager
 {

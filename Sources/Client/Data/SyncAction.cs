@@ -2,11 +2,20 @@ using SwiftXP.SPT.TheModfather.Client.Enums;
 
 namespace SwiftXP.SPT.TheModfather.Client.Data;
 
-public class SyncAction
+public class SyncAction(
+    string RelativeFilePath,
+    SyncActionType Type,
+    string? Hash = null,
+    long? SizeInBytes = null,
+    bool IsSelected = true)
 {
-    public string RelativeFilePath { get; set; } = string.Empty;
+    public string RelativeFilePath { get; } = RelativeFilePath;
 
-    public SyncActionType Type { get; set; }
+    public SyncActionType Type { get; } = Type;
 
-    public bool IsSelected { get; set; } = true;
+    public string? Hash { get; } = Hash;
+
+    public long? SizeInBytes { get; } = SizeInBytes;
+
+    public bool IsSelected { get; set; } = IsSelected;
 }

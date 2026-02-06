@@ -15,7 +15,7 @@ using SwiftXP.SPT.Common.IO.Hashing;
 using SwiftXP.SPT.TheModfather.Server.Data;
 using SwiftXP.SPT.TheModfather.Server.Repositories;
 
-namespace SwiftXP.SPT.TheModfather.Server.States;
+namespace SwiftXP.SPT.TheModfather.Server.Services;
 
 [Injectable(InjectionType.Singleton)]
 public class ServerManifestManager : IServerManifestManager, IDisposable
@@ -31,7 +31,6 @@ public class ServerManifestManager : IServerManifestManager, IDisposable
     private FileSystemWatcher? _fileSystemWatcher;
     private Matcher? _matcher;
 
-    // Semaphore für Schreibzugriffe (Updates/Rebuilds)
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly CancellationTokenSource _globalCancellationTokenSource = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _fileDebounceTokens = new();

@@ -37,6 +37,7 @@ public class ServerFileResolver(IBaseDirectoryLocator baseDirectoryLocator) : IS
                 return null;
 
             FileInfo fileInfo = new(requestedFullPath);
+
             return fileInfo.Exists ? fileInfo : null;
         }
         catch (Exception)

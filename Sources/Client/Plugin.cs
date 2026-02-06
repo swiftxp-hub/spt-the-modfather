@@ -1,306 +1,185 @@
 ﻿using BepInEx;
-using HarmonyLib;
-using SPT.Common.Utils;
 using SwiftXP.SPT.Common.Environment;
 using SwiftXP.SPT.Common.IO.Hashing;
 using SwiftXP.SPT.Common.Json;
 using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.TheModfather.Client.Contexts;
 using SwiftXP.SPT.TheModfather.Client.Data;
-using SwiftXP.SPT.TheModfather.Client.Data.Loaders;
+using SwiftXP.SPT.TheModfather.Client.Enums;
+using SwiftXP.SPT.TheModfather.Client.Patches;
 using SwiftXP.SPT.TheModfather.Client.Repositories;
 using SwiftXP.SPT.TheModfather.Client.Services;
 using SwiftXP.SPT.TheModfather.Client.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SwiftXP.SPT.TheModfather.Client;
 
 [BepInPlugin("com.swiftxp.spt.themodfather", MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
-[BepInDependency("com.SPT.custom", "4.0.11")]
+[BepInDependency("com.SPT.custom", "4.0.12")]
 [BepInProcess("EscapeFromTarkov.exe")]
-#pragma warning disable CA1001
+#pragma warning disable CA1001 // Types that own disposable fields should be disposable
 public class Plugin : BaseUnityPlugin
-#pragma warning restore CA1001
+#pragma warning restore CA1001 // Types that own disposable fields should be disposable
 {
-    // --- FIELDS ---
-    private static object? s_tarkovAppInstance;
+    private PluginState _currentState = PluginState.Initializing;
+    private readonly UpdateUiState _uiState = new();
 
-    // Data
-    private IReadOnlyList<SyncAction> _syncActions = [];
+    private SimpleSptLogger? _simpleSptLogger;
+    private UpdateManager? _updateManager;
+    private SyncActionManager? _syncActionManager;
 
-    // Logic States
-    private bool _isChecking;
-    private bool _updateFound;
-    private bool _isUpdating;
-    private bool _isError;
+    private CancellationTokenSource? _cancellationTokenSource;
 
-    // Progress States
-    private float _updateProgress;
-    private string _updateDetailText = "";
-
-    // Threading & Cancellation
-    private bool _readyToStartGame;
-    private CancellationTokenSource _cancellationTokenSource;
-
-    private SimpleSptLogger _simpleSptLogger;
-    private IClientExcludesRepository _clientExcludesRepository;
-    private IClientManifestRepository _clientManifestRepository;
-    private IPluginContext _plugInContext;
-
-    private string _statusText = "Consulting the families...";
-
-    // --- PROPERTIES ---
-    public static bool IsConfirmed { get; private set; }
-
-    // --- METHODS ---
-
-#pragma warning disable CA1707
-    public static bool StartPrefix(object __instance)
-#pragma warning restore CA1707
-    {
-        if (IsConfirmed) return true;
-        s_tarkovAppInstance = __instance;
-        return false;
-    }
+    private ClientState? _clientState;
+    private SyncProposal? _syncProposal;
 
     private async Task Awake()
     {
         _simpleSptLogger = new(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_VERSION);
-        _clientExcludesRepository = new ClientExcludesRepository(_simpleSptLogger, new JsonFileSerializer());
-        _clientManifestRepository = new ClientManifestRepository(_simpleSptLogger, new JsonFileSerializer());
 
-        InitializeHarmonyPatch();
-        _isChecking = true;
-
-        _ = Task.Run(async () => { await InitContext(); await PerformUpdateCheck(); });
-    }
-
-    private void InitializeHarmonyPatch()
-    {
-        Harmony harmony = new("com.swiftxp.spt.themodfather.patch");
-        Type appType = AccessTools.TypeByName("EFT.TarkovApplication");
-        MethodInfo startMethod = AccessTools.Method(appType, "Start");
-
-        if (startMethod != null)
-        {
-            MethodInfo prefixMethod = typeof(Plugin).GetMethod(nameof(StartPrefix), BindingFlags.Public | BindingFlags.Static);
-            HarmonyMethod harmonyPrefix = new(prefixMethod) { priority = Priority.High };
-            harmony.Patch(startMethod, harmonyPrefix);
-        }
-        else
-        {
-            Logger.LogError("Critical: Could not find EFT.TarkovApplication.Start!");
-        }
-    }
-
-    private async Task InitContext()
-    {
         BaseDirectoryLocator baseDirectoryLocator = new();
-        PluginContextFactory pluginContextFactory = new(baseDirectoryLocator, _clientExcludesRepository, _clientManifestRepository);
+        JsonFileSerializer jsonFileSerializer = new();
 
-        _plugInContext = await pluginContextFactory.CreateAsync();
+        ClientExcludesRepository clientExcludesRepo = new(_simpleSptLogger, baseDirectoryLocator, jsonFileSerializer);
+        ClientManifestRepository clientManifestRepo = new(_simpleSptLogger, baseDirectoryLocator, jsonFileSerializer);
+        ServerManifestRepository serverManifestRepository = new(_simpleSptLogger);
+
+        GameStartPatch.Initialize(Logger);
+
+        _clientState = new(
+            baseDirectoryLocator.GetBaseDirectory(),
+            await clientExcludesRepo.LoadOrCreateDefaultAsync(),
+            await clientManifestRepo.LoadAsync(),
+            await serverManifestRepository.LoadAsync()
+        );
+
+        _updateManager = new UpdateManager(_simpleSptLogger, new XxHash128FileHasher());
+        _syncActionManager = new SyncActionManager(_simpleSptLogger, jsonFileSerializer);
+
+        _currentState = PluginState.CheckingForUpdates;
         _cancellationTokenSource = new CancellationTokenSource();
+
+        _ = Task.Run(() => PerformUpdateCheck(_cancellationTokenSource.Token));
     }
 
-    private async Task PerformUpdateCheck()
+    private async Task PerformUpdateCheck(CancellationToken cancellationToken)
     {
         try
         {
-            // Initial delay kann auch gecancelt werden, wenn wir den Token übergeben
-            await Task.Delay(1000, _cancellationTokenSource.Token);
+            _uiState.StatusText = "Consulting the families...";
 
-            _statusText = "Consulting the families...";
-            _isError = false;
-
-            UpdateManager updateManager = new(_simpleSptLogger, new XxHash128FileHasher());
-
-            Progress<(float progress, string message)> progressIndicator = new(progress =>
+            Progress<(float val, string msg)> progress = new(progress =>
             {
-                _updateProgress = progress.progress;
-                _updateDetailText = progress.message;
+                _uiState.Progress = progress.val;
+                _uiState.ProgressDetail = progress.msg;
             });
 
-            _syncActions = await updateManager.GetSyncActionsAsync(_plugInContext,
-                progressIndicator,
-                _cancellationTokenSource.Token);
+            _syncProposal = await _updateManager!.GetSyncActionsAsync(_clientState!, progress, cancellationToken);
 
-            _updateFound = _syncActions.Count != 0;
+            if (_syncProposal.SyncActions.Any())
+            {
+                _uiState.SyncActions = _syncProposal.SyncActions;
+                _currentState = PluginState.UpdateAvailable;
+                _uiState.StatusText = "I have an offer you can't refuse.";
+            }
+            else
+            {
+                _currentState = PluginState.NoUpdatesFound;
+                _uiState.StatusText = "The books are clean. Business as usual.";
 
-            _statusText = _updateFound
-                ? "I have an update you can't refuse."
-                : "The books are clean. Business as usual.";
+                await Task.Delay(500, cancellationToken); // Kurze Pause für Lesbarkeit
+                StartGame();
+            }
         }
         catch (OperationCanceledException)
         {
-            // Abfangen des Abbruchs während des Checks
-            Logger.LogWarning("Check cancelled by user.");
-            _statusText = "Check cancelled by Don.";
-            _isError = true;
-            _updateFound = false;
+            HandleError("Check cancelled by user.");
         }
         catch (Exception ex)
         {
-            Logger.LogError($"Check failed: {ex}");
-            _statusText = $"Check failed: {ex.Message}";
-            _isError = true;
-            _updateFound = false;
-        }
-        finally
-        {
-            _isChecking = false;
+            Logger.LogError(ex);
+            HandleError($"Check failed: {ex.Message}");
         }
     }
 
     private async Task RunUpdateProcess()
     {
-        _isUpdating = true;
-        _isError = false;
-        _statusText = "Settling all family business...";
-        _updateProgress = 0f;
+        _currentState = PluginState.Updating;
+        _uiState.StatusText = "Settling all family business...";
 
-        // Falls der Token vom Check verbraucht/cancelled ist, brauchen wir hier ggf. einen neuen,
-        // oder wir re-initialisieren ihn vor jedem Start.
-        // Sicherheitshalber erneuern wir ihn, falls er disposed wurde (siehe finally).
-        if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
-        {
+        if (_cancellationTokenSource?.IsCancellationRequested == true)
             _cancellationTokenSource = new CancellationTokenSource();
-        }
 
         try
         {
-            List<SyncAction> actionsToProcess = _syncActions.Where(a => a.IsSelected).ToList();
-            if (actionsToProcess.Count == 0)
+            if (_uiState.SyncActions.Count == 0 || !_uiState.SyncActions.Any(x => x.IsSelected))
             {
-                Logger.LogInfo("No actions selected.");
-                _readyToStartGame = true;
+                StartGame();
+
                 return;
             }
 
-            // --- SIMULATION START ---
-            _updateDetailText = "Preparing...";
-            await Task.Delay(500, _cancellationTokenSource.Token);
+            await _syncActionManager!.ProcessSyncActionsAsync(_clientState!, _uiState.SyncActions,
+                new Progress<(float progress, string message)>(progress =>
+                {
+                    _uiState.Progress = progress.progress;
+                    _uiState.ProgressDetail = progress.message;
+                }),
+                _cancellationTokenSource!.Token);
 
-            for (int i = 0; i <= 100; i++)
-            {
-                _cancellationTokenSource.Token.ThrowIfCancellationRequested();
+            _currentState = PluginState.UpdateComplete;
+            _uiState.StatusText = "Welcome to the family.";
 
-                _updateProgress = i / 100f;
-                _updateDetailText = i < 50 ? $"Downloading files... {i}% (12.5 MB/s)" : $"Patching files... {i}%";
+            await Task.Delay(1000);
 
-                await Task.Delay(50, _cancellationTokenSource.Token);
-            }
-            // --- SIMULATION ENDE ---
-
-            _statusText = "Welcome to the family.";
-            _updateDetailText = "Completed.";
-
-            await Task.Delay(800, _cancellationTokenSource.Token);
-
-            Logger.LogInfo("Update complete.");
-            _readyToStartGame = true;
+            StartGame();
         }
         catch (OperationCanceledException)
         {
-            Logger.LogWarning("Update cancelled by user.");
-            _statusText = "Update cancelled by Don.";
-            _isError = true;
+            HandleError("Update cancelled.");
         }
         catch (Exception ex)
         {
-            _statusText = $"Look how they massacred my code: {ex.Message}";
-            Logger.LogError($"Update process failed: {ex}");
-            _isError = true;
-        }
-        finally
-        {
-            // Token aufräumen
-            if (_cancellationTokenSource != null)
-            {
-                _cancellationTokenSource.Dispose();
-                _cancellationTokenSource = null;
-            }
+            Logger.LogError(ex);
+
+            HandleError($"Update failed: {ex.Message}");
         }
     }
 
-    private void CancelUpdate()
+    private void StartGame()
     {
-        if (_cancellationTokenSource != null)
-        {
-            _cancellationTokenSource.Cancel();
-        }
+        _currentState = PluginState.ReadyToGame;
+        GameStartPatch.ResumeGame();
     }
 
-    private void Update()
+    private void HandleError(string message)
     {
-        if (IsConfirmed || s_tarkovAppInstance == null) return;
-
-        if (_readyToStartGame)
-        {
-            _readyToStartGame = false;
-            ContinueGameLoad();
-            return;
-        }
-
-        if (!_isChecking && !_updateFound && !_isUpdating && !_isError)
-        {
-            ContinueGameLoad();
-        }
+        _currentState = PluginState.Error;
+        _uiState.IsError = true;
+        _uiState.StatusText = message;
     }
 
     private void OnGUI()
     {
-        if (s_tarkovAppInstance == null || IsConfirmed) return;
-        if (!_isChecking && !_updateFound && !_isUpdating && !_isError) return;
-
-        // Logik für UI-Zustände
-        bool showListAndButtons = _updateFound && !_isChecking && !_isUpdating && !_isError;
-
-        // WICHTIG: Wir zeigen Progress, wenn wir CHECKEN oder UPDATEN (sofern kein Fehler ist)
-        bool showProgress = (_isChecking || _isUpdating) && !_isError;
+        // Wenn das Spiel läuft oder wir fertig sind, keine GUI mehr
+        if (GameStartPatch.IsConfirmed || _currentState == PluginState.ReadyToGame) return;
 
         ModfatherUI.Draw(
-            _statusText,
-            showListAndButtons,
-            showProgress,        // Vereinheitlichter Status
-            _isError,
-            _updateProgress,
-            _updateDetailText,
-            _syncActions,
+            _currentState,
+            _uiState,
             onAccept: () => Task.Run(RunUpdateProcess),
-            onDecline: () =>
-            {
-                Logger.LogInfo("User declined update.");
-                ContinueGameLoad();
-            },
-            onCancel: () => CancelUpdate(), // Funktioniert jetzt für Check UND Update
-            onErrorContinue: () =>
-            {
-                Logger.LogInfo("User ignored error/cancel.");
-                ContinueGameLoad();
-            }
+            onDecline: () => StartGame(),
+            onCancel: () => _cancellationTokenSource?.Cancel(),
+            onErrorContinue: () => StartGame()
         );
     }
 
-    private void ContinueGameLoad()
+    private void OnDestroy()
     {
-        IsConfirmed = true;
-        if (s_tarkovAppInstance != null)
-        {
-            try
-            {
-                Type appType = AccessTools.TypeByName("EFT.TarkovApplication");
-                MethodInfo startMethod = AccessTools.Method(appType, "Start");
-                startMethod.Invoke(s_tarkovAppInstance, null);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Failed to resume game load: {ex}");
-            }
-        }
+        _cancellationTokenSource?.Dispose();
     }
 }

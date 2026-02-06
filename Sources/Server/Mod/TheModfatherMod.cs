@@ -5,7 +5,7 @@ using SPTarkov.Server.Core.Models.External;
 using SPTarkov.Server.Core.Models.Utils;
 using SwiftXP.SPT.TheModfather.Server.Http;
 using SwiftXP.SPT.TheModfather.Server.Repositories;
-using SwiftXP.SPT.TheModfather.Server.States;
+using SwiftXP.SPT.TheModfather.Server.Services;
 
 namespace SwiftXP.SPT.TheModfather.Server;
 

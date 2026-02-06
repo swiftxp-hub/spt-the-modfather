@@ -8,11 +8,11 @@ public static class Constants
 
     public const string RouteGetFile = "/getFile";
 
-    public const string ClientExcludesFilePath = "TheModfather_Data/clientExcludes.json";
+    public const string ClientConfigurationFilePath = "TheModfather_Data/clientConfiguration.json";
 
     public const string ClientManifestFilePath = "TheModfather_Data/clientManifest.json";
 
-    public const string StagingPath = "TheModfather_Data/Staging";
+    public const string StagingDirectory = "TheModfather_Data/Staging";
 
     public const string FikaHeadlessModGuid = "com.fika.headless";
 

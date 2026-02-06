@@ -1,191 +1,170 @@
-// using System;
-// using System.Collections.Generic;
-// using System.IO;
-// using System.Linq;
-// using System.Threading;
-// using System.Threading.Tasks;
-// using Microsoft.Extensions.FileSystemGlobbing;
-// using Newtonsoft.Json;
-// using SPT.Common.Http;
-// using SwiftXP.SPT.Common.Loggers.Interfaces;
-// using SwiftXP.SPT.Common.Services;
-// using SwiftXP.SPT.TheModfather.Client.Data;
-// using SwiftXP.SPT.TheModfather.Client.Data.Loaders;
-// using SwiftXP.SPT.TheModfather.Client.Enums;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using SPT.Common.Http;
+using SwiftXP.SPT.Common.Extensions.FileSystem;
+using SwiftXP.SPT.Common.Http;
+using SwiftXP.SPT.Common.Json;
+using SwiftXP.SPT.Common.Loggers;
+using SwiftXP.SPT.TheModfather.Client.Contexts;
+using SwiftXP.SPT.TheModfather.Client.Data;
+using SwiftXP.SPT.TheModfather.Client.Enums;
+using SwiftXP.SPT.TheModfather.Server.Data;
 
-// namespace SwiftXP.SPT.TheModfather.Client.Services;
+namespace SwiftXP.SPT.TheModfather.Client.Services;
 
-// public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
-//     BaseDirectoryUtility baseDirectoryService,
-//     ClientExcludesLoader clientExcludesLoader,
-//     ClientManifestLoader clientManifestLoader)
-// {
-//     public async Task ProcessSyncActionsAsync(List<SyncAction> syncActions, CancellationToken cancellationToken)
-//     {
-//         string baseDirectory = baseDirectoryService.GetEftBaseDirectory();
-//         string stagingPath = Path.GetFullPath(Path.Combine(baseDirectory, Constants.StagingPath));
+public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
+    IJsonFileSerializer jsonFileSerializer) : ISyncActionManager
+{
+    public async Task ProcessSyncActionsAsync(ClientState clientState, IReadOnlyList<SyncAction> syncActions,
+        Progress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
+    {
+        string baseDirectory = clientState.BaseDirectory;
+        string stagingDirectory = Path.GetFullPath(Path.Combine(baseDirectory, Constants.StagingDirectory));
 
-//         if (!stagingPath.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase))
-//             throw new InvalidOperationException("Invalid staging path");
+        if (!stagingDirectory.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Invalid staging path");
 
-//         ClientExcludes clientExcludes = clientExcludesLoader.LoadOrCreate();
-//         ClientManifest? currentClientManifest = clientManifestLoader.Load()
-//             ?? new ClientManifest(DateTimeOffset.MinValue, RequestHandler.Host);
+        ClientConfiguration clientConfiguration = clientState.ClientConfiguration;
+        ClientManifest currentClientManifest = clientState.ClientManifest!;
 
-//         ClientManifest newClientManifest = new(DateTimeOffset.UtcNow, RequestHandler.Host);
-//         ServerManifest serverManifest = await GetServerManifest();
+        ClientManifest newClientManifest = new(DateTimeOffset.UtcNow, RequestHandler.Host);
+        ServerManifest serverManifest = clientState.ServerManifest;
 
-//         float updateProgress = 0f;
+        float updateProgress = 0f;
 
-//         int actionsExecuted = 0;
-//         int totalActions = 1 + syncActions.Count;
+        int actionsExecuted = 0;
+        int totalActions = 1 + syncActions.Count;
 
-//         CleanUpStagingDirectory(stagingPath);
-//         updateProgress = ++actionsExecuted / totalActions;
+        CleanUpStagingDirectory(stagingDirectory);
+        updateProgress = ++actionsExecuted / totalActions;
 
-//         foreach (SyncAction syncAction in syncActions)
-//         {
-//             cancellationToken.ThrowIfCancellationRequested();
+        foreach (SyncAction syncAction in syncActions)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
-//             if (!syncAction.IsSelected)
-//                 continue;
+            if (!syncAction.IsSelected)
+            {
+                clientConfiguration.ExcludePatterns = [.. clientConfiguration.ExcludePatterns, syncAction.RelativeFilePath];
 
-//             switch (syncAction.Type)
-//             {
-//                 case SyncActionType.Add:
-//                 case SyncActionType.Update:
-//                     await DownloadFileAsync();
+                continue;
+            }
 
-//                     break;
+            switch (syncAction.Type)
+            {
+                case SyncActionType.Add:
+                case SyncActionType.Update:
+                    await DownloadFileAsync(stagingDirectory, syncAction.RelativeFilePath, progressCallback, cancellationToken);
 
-//                 case SyncActionType.Delete:
-//                     CreateDeleteInstruction(GetPayloadPath(baseDir), modSyncAction.Key);
+                    break;
 
-//                     break;
-//             }
-//         }
+                case SyncActionType.Delete:
+                    CreateDeleteInstruction(stagingDirectory, syncAction.RelativeFilePath);
 
-//         Dictionary<string, SyncAction> userRejectedActions = syncActions.Where(a => !a.IsSelected).ToDictionary(a => a.RelativeFilePath);
-//         Dictionary<string, SyncAction> acceptedActions = syncActions.Where(a => a.IsSelected).ToDictionary(a => a.RelativeFilePath);
+                    break;
+            }
+        }
 
-//         foreach (ServerFileManifest serverFileManifest in serverManifest.Files)
-//         {
-//             if (IsExcluded(serverFileManifest.RelativeFilePath, clientExcludes))
-//                 continue;
+        Dictionary<string, SyncAction> userRejectedActions = syncActions.Where(a => !a.IsSelected).ToDictionary(a => a.RelativeFilePath);
+        Dictionary<string, SyncAction> acceptedActions = syncActions.Where(a => a.IsSelected).ToDictionary(a => a.RelativeFilePath);
 
-//             if (acceptedActions.TryGetValue(serverFileManifest.RelativeFilePath, out SyncAction? syncAction))
-//             {
-//                 if (syncAction.Type == SyncActionType.Add ||
-//                    syncAction.Type == SyncActionType.Update ||
-//                    syncAction.Type == SyncActionType.Adopt)
-//                 {
-//                     newClientManifest.AddOrUpdateFile(new ClientFileManifest(
-//                         serverFileManifest.RelativeFilePath,
-//                         serverFileManifest.Hash,
-//                         serverFileManifest.SizeInBytes,
-//                         DateTimeOffset.UtcNow));
-//                 }
-//             }
-//             else if (userRejectedActions.ContainsKey(serverFileManifest.RelativeFilePath))
-//             {
-//                 ClientFileManifest oldEntry = currentClientManifest.Files.FirstOrDefault(x => x.RelativeFilePath == serverFileManifest.RelativeFilePath);
-//                 if (oldEntry != null)
-//                     newClientManifest.AddOrUpdateFile(oldEntry);
-//             }
-//             else
-//             {
-//                 newClientManifest.AddOrUpdateFile(new ClientFileManifest(
-//                     serverFileManifest.RelativeFilePath,
-//                     serverFileManifest.Hash,
-//                     serverFileManifest.SizeInBytes,
-//                     DateTimeOffset.UtcNow));
-//             }
-//         }
+        foreach (ServerFileManifest serverFileManifest in serverManifest.Files)
+        {
+            if (serverFileManifest.RelativeFilePath.IsExcludedByPatterns(clientConfiguration.ExcludePatterns))
+                continue;
 
-//         string json = JsonConvert.SerializeObject(newClientManifest, Formatting.Indented);
-//         await File.WriteAllTextAsync(Path.Combine(stagingPath, "clientManifest.json.new"), json, cancellationToken);
-//     }
+            if (acceptedActions.TryGetValue(serverFileManifest.RelativeFilePath, out SyncAction? syncAction))
+            {
+                if (syncAction.Type == SyncActionType.Add ||
+                   syncAction.Type == SyncActionType.Update ||
+                   syncAction.Type == SyncActionType.Adopt)
+                {
+                    newClientManifest.AddOrUpdateFile(new ClientFileManifest(
+                        serverFileManifest.RelativeFilePath,
+                        serverFileManifest.Hash,
+                        serverFileManifest.SizeInBytes,
+                        DateTimeOffset.UtcNow));
+                }
+            }
+            else if (userRejectedActions.ContainsKey(serverFileManifest.RelativeFilePath))
+            {
+                ClientFileManifest oldEntry = currentClientManifest.Files.FirstOrDefault(x => x.RelativeFilePath == serverFileManifest.RelativeFilePath);
 
-//     private static void CleanUpStagingDirectory(string stagingPath)
-//     {
-//         if (Directory.Exists(stagingPath))
-//             Directory.Delete(stagingPath, true);
+                if (oldEntry != null)
+                    newClientManifest.AddOrUpdateFile(oldEntry);
+            }
+            else
+            {
+                newClientManifest.AddOrUpdateFile(new ClientFileManifest(
+                    serverFileManifest.RelativeFilePath,
+                    serverFileManifest.Hash,
+                    serverFileManifest.SizeInBytes,
+                    DateTimeOffset.UtcNow));
+            }
+        }
 
-//         Directory.CreateDirectory(stagingPath);
-//     }
+        await jsonFileSerializer.SerializeJsonFileAsync(Path.Combine(stagingDirectory, "clientExcludes.json.new"), clientConfiguration.ExcludePatterns, cancellationToken);
+        await jsonFileSerializer.SerializeJsonFileAsync(Path.Combine(stagingDirectory, "clientManifest.json.new"), newClientManifest, cancellationToken);
+    }
 
-//     private async Task<ServerManifest> GetServerManifest()
-//     {
-//         string json = await RequestHandler.GetJsonAsync($"{Constants.RoutePrefix}{Constants.RouteGetServerManifest}");
+    private static void CleanUpStagingDirectory(string stagingPath)
+    {
+        if (Directory.Exists(stagingPath))
+            Directory.Delete(stagingPath, true);
 
-//         simpleSptLogger.LogInfo($"Server-Manifest: {json}");
+        Directory.CreateDirectory(stagingPath);
+    }
 
-//         if (string.IsNullOrWhiteSpace(json))
-//             throw new InvalidOperationException("Empty JSON-response");
+    private async Task DownloadFileAsync(string stagingDirectory, string relativeFilePath,
+        Progress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
+    {
+        TimeSpan defaultTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
+        RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
 
-//         ServerManifest? serverManifest = JsonConvert.DeserializeObject<ServerManifest>(json)
-//             ?? throw new InvalidOperationException("JSON-response could not be deserialized");
+        try
+        {
+            string urlPath = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/" + Uri.EscapeDataString(relativeFilePath);
+            string destinationPath = Path.GetFullPath(Path.Combine(stagingDirectory, relativeFilePath));
 
-//         return serverManifest;
-//     }
+            if (!destinationPath.StartsWith(stagingDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                throw new UnauthorizedAccessException($"Security Alert: Blocked attempt to write outside payload directory: {destinationPath}");
 
-//     private async Task DownloadFileAsync(string dataDirectory, string payloadDirectory, string relativeFilePath, Action<DownloadProgress>? progressCallback = null)
-//     {
-//         TimeSpan defaultTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
-//         RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
+            string? directoryPath = Path.GetDirectoryName(destinationPath);
 
-//         try
-//         {
-//             string urlPath = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/" + Uri.EscapeDataString(relativeFilePath);
+            if (!string.IsNullOrEmpty(directoryPath))
+                Directory.CreateDirectory(directoryPath);
 
-//             string baseDir = baseDirectoryService.GetEftBaseDirectory();
-//             string payloadBaseDir = Path.GetFullPath(Path.Combine(baseDir, dataDirectory, payloadDirectory));
-//             string destinationPath = Path.GetFullPath(Path.Combine(payloadBaseDir, relativeFilePath));
+            await RequestHandler.HttpClient.DownloadWithCancellationAsync(urlPath, destinationPath, (downloadProgress) =>
+            {
 
-//             if (!destinationPath.StartsWith(payloadBaseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-//             {
-//                 throw new UnauthorizedAccessException($"Security Alert: Blocked attempt to write outside payload directory: {destinationPath}");
-//             }
+            }, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            simpleSptLogger.LogError($"Failed to download '{relativeFilePath}': {ex.Message}");
 
-//             string? directoryPath = Path.GetDirectoryName(destinationPath);
-//             if (!string.IsNullOrEmpty(directoryPath))
-//             {
-//                 Directory.CreateDirectory(directoryPath);
-//             }
+            throw;
+        }
+        finally
+        {
+            RequestHandler.HttpClient.HttpClient.Timeout = defaultTimeout;
+        }
+    }
 
-//             await RequestHandler.HttpClient.DownloadAsync(urlPath, destinationPath, progressCallback);
-//         }
-//         catch (Exception ex)
-//         {
-//             simpleSptLogger.LogError($"Failed to download '{relativeFilePath}': {ex.Message}");
+    private static void CreateDeleteInstruction(string stagingDirectory, string relativeFilePath)
+    {
+        string normalizedPath = relativeFilePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+        string instructionPath = Path.Combine(stagingDirectory, normalizedPath + Constants.DeleteInstructionExtension);
 
-//             throw;
-//         }
-//         finally
-//         {
-//             RequestHandler.HttpClient.HttpClient.Timeout = defaultTimeout;
-//         }
-//     }
+        string? directory = Path.GetDirectoryName(instructionPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
 
-//     private static void CreateDeleteInstruction(string payloadDirectory, string relativeFilePath)
-//     {
-//         string normalizedPath = relativeFilePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
-//         string instructionPath = Path.Combine(payloadDirectory, normalizedPath + Constants.DeleteInstructionExtension);
-
-//         string? directory = Path.GetDirectoryName(instructionPath);
-//         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-//         {
-//             Directory.CreateDirectory(directory);
-//         }
-
-//         File.WriteAllText(instructionPath, string.Empty);
-//     }
-
-//     private static bool IsExcluded(string relativePath, ClientExcludes clientExcludes)
-//     {
-//         Matcher matcher = new(StringComparison.OrdinalIgnoreCase);
-//         matcher.AddIncludePatterns(clientExcludes);
-
-//         return matcher.Match(relativePath).HasMatches;
-//     }
-// }
+        File.WriteAllText(instructionPath, string.Empty);
+    }
+}
