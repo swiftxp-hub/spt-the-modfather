@@ -29,6 +29,8 @@ namespace SwiftXP.SPT.TheModfather.Client;
 public class Plugin : BaseUnityPlugin
 #pragma warning restore CA1001 // Types that own disposable fields should be disposable
 {
+    private volatile bool _requestGameStart;
+
     private PluginState _currentState = PluginState.Initializing;
     private readonly UpdateUiState _uiState = new();
 
@@ -100,8 +102,9 @@ public class Plugin : BaseUnityPlugin
                 _currentState = PluginState.NoUpdatesFound;
                 _uiState.StatusText = "The books are clean. Business as usual.";
 
-                await Task.Delay(500, cancellationToken); // Kurze Pause für Lesbarkeit
-                StartGame();
+                await Task.Delay(2000, cancellationToken);
+
+                _requestGameStart = true;
             }
         }
         catch (OperationCanceledException)
@@ -111,6 +114,7 @@ public class Plugin : BaseUnityPlugin
         catch (Exception ex)
         {
             Logger.LogError(ex);
+
             HandleError($"Check failed: {ex.Message}");
         }
     }
@@ -155,7 +159,7 @@ public class Plugin : BaseUnityPlugin
 
             if (_syncProposal!.SyncActions.Count == 0 || !_syncProposal!.SyncActions.Any(x => x.IsSelected == true))
             {
-                StartGame();
+                _requestGameStart = true;
 
                 return;
             }
@@ -170,8 +174,9 @@ public class Plugin : BaseUnityPlugin
 
             _currentState = PluginState.UpdateComplete;
             _uiState.StatusText = "Welcome to the family.";
+            _uiState.ProgressDetail = "Closing Escape From Tarkov... the update will be finished by an external process.";
 
-            await Task.Delay(1000);
+            await Task.Delay(2000);
 
             StartUpdaterAndQuit();
         }
@@ -218,8 +223,8 @@ public class Plugin : BaseUnityPlugin
             FileName = updaterPath,
             Arguments = string.Join(" ", startOptions).Trim(),
             WorkingDirectory = _clientState!.BaseDirectory,
-            UseShellExecute = false,
-            CreateNoWindow = true
+            UseShellExecute = true,
+            CreateNoWindow = false
         };
 
         try
@@ -242,17 +247,26 @@ public class Plugin : BaseUnityPlugin
 
     private void OnGUI()
     {
-        // Wenn das Spiel läuft oder wir fertig sind, keine GUI mehr
-        if (GameStartPatch.IsConfirmed || _currentState == PluginState.ReadyToGame) return;
+        if (GameStartPatch.IsConfirmed || _currentState == PluginState.ReadyToGame)
+            return;
 
         ModfatherUI.Draw(
             _currentState,
             _uiState,
             onAccept: () => Task.Run(RunUpdateProcess),
-            onDecline: () => StartGame(),
+            onDecline: () => _requestGameStart = true,
             onCancel: () => _cancellationTokenSource?.Cancel(),
-            onErrorContinue: () => StartGame()
+            onErrorContinue: () => _requestGameStart = true
         );
+    }
+
+    private void Update()
+    {
+        if (_requestGameStart)
+        {
+            _requestGameStart = false;
+            StartGame();
+        }
     }
 
     private void OnDestroy()

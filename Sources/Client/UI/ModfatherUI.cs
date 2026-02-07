@@ -72,7 +72,12 @@ namespace SwiftXP.SPT.TheModfather.Client.UI
                 // --- LOGIK WEICHE ---
                 // Ableitung der Flags aus dem zentralen State Enum
                 bool isError = pluginState == PluginState.Error;
-                bool showProgress = pluginState == PluginState.CheckingForUpdates || pluginState == PluginState.Updating;
+
+                bool showProgress = pluginState == PluginState.CheckingForUpdates
+                    || pluginState == PluginState.Updating
+                    || pluginState == PluginState.Initializing
+                    || pluginState == PluginState.UpdateComplete;
+
                 bool showButtons = pluginState == PluginState.UpdateAvailable;
 
                 // A) FEHLER (Höchste Priorität für visuelles Feedback)
