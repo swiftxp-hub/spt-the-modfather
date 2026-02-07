@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using SwiftXP.SPT.Common.EFT;
 using SwiftXP.SPT.Common.Environment;
 using SwiftXP.SPT.Common.IO.Hashing;
 using SwiftXP.SPT.Common.Json;
@@ -12,9 +13,12 @@ using SwiftXP.SPT.TheModfather.Client.Services;
 using SwiftXP.SPT.TheModfather.Client.UI;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace SwiftXP.SPT.TheModfather.Client;
 
@@ -169,7 +173,7 @@ public class Plugin : BaseUnityPlugin
 
             await Task.Delay(1000);
 
-            StartGame();
+            StartUpdaterAndQuit();
         }
         catch (OperationCanceledException)
         {
@@ -186,7 +190,47 @@ public class Plugin : BaseUnityPlugin
     private void StartGame()
     {
         _currentState = PluginState.ReadyToGame;
+
         GameStartPatch.ResumeGame();
+    }
+
+    private void StartUpdaterAndQuit()
+    {
+        string updaterPath = Path.Combine(_clientState!.BaseDirectory, Constants.UpdaterExecutable);
+
+        if (!File.Exists(updaterPath))
+        {
+            _simpleSptLogger!.LogError($"Updater executable not found at: {updaterPath}");
+
+            HandleError("Updater executable not found.");
+
+            return;
+        }
+
+        string[] startOptions =
+        [
+            EFTGameExtensions.IsFikaHeadlessInstalled() ? "--silent true" : string.Empty,
+                $"--processid {Process.GetCurrentProcess().Id}"
+        ];
+
+        ProcessStartInfo updaterStartInfo = new()
+        {
+            FileName = updaterPath,
+            Arguments = string.Join(" ", startOptions).Trim(),
+            WorkingDirectory = _clientState!.BaseDirectory,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        try
+        {
+            Process.Start(updaterStartInfo);
+            Application.Quit();
+        }
+        catch (Exception ex)
+        {
+            _simpleSptLogger!.LogException(ex);
+        }
     }
 
     private void HandleError(string message)

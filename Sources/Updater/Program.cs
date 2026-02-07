@@ -1,114 +1,104 @@
-﻿using System.Runtime.InteropServices;
+﻿using Spectre.Console;
+using Spectre.Console.Rendering;
+using SwiftXP.SPT.TheModfather.Updater.Diagnostics;
+using SwiftXP.SPT.TheModfather.Updater.Environment;
+using SwiftXP.SPT.TheModfather.Updater.Logging;
+using SwiftXP.SPT.TheModfather.Updater.Services;
+using SwiftXP.SPT.TheModfather.Updater.UI;
 
-namespace SwiftXP.SPT.TheModfather.Updater
+namespace SwiftXP.SPT.TheModfather.Updater;
+
+public static class Program
 {
-    internal static class Program
+    private static readonly CancellationTokenSource s_cancellationTokenSource = new();
+
+    private const string HeaderText = "The Modfather Updater";
+
+    static async Task Main(string[] args)
     {
-        // =============================================================
-        //               WINDOWS API IMPORT (P/Invoke)
-        // =============================================================
+        SubscribeToCancelKeyPress();
 
-        // Zugriff auf das Konsolenfenster holen
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern IntPtr GetConsoleWindow();
+        SimpleLogger simpleLogger = new(AppContext.BaseDirectory);
+        CommandLineArgsReader commandLineArgsReader = new();
+        EFTProcessWatcher eftProcessWatcher = new(simpleLogger, commandLineArgsReader);
 
-        // Aktuelle Fensterposition und -größe abrufen
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+        UpdateManager updateManager = new(simpleLogger, eftProcessWatcher);
 
-        // Fenster verschieben
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
-
-        // Bildschirmauflösung abrufen
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern int GetSystemMetrics(int nIndex);
-
-        // Z-Order (Ebenen) des Fensters ändern (für TopMost)
-        [DllImport("user32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
-        // =============================================================
-        //               STRUKTUREN & KONSTANTEN
-        // =============================================================
-
-        // Struktur für Fensterkoordinaten
-        [StructLayout(LayoutKind.Sequential)]
-        public struct RECT
+        try
         {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
+            await simpleLogger.StartNewFile(s_cancellationTokenSource.Token);
+
+            if (commandLineArgsReader.IsSilent())
+            {
+                await StartSilentUpdate(updateManager);
+            }
+            else
+            {
+                if (OperatingSystem.IsWindows())
+                    WindowHelper.CenterAndTopMost();
+
+                await StartUiUpdate(updateManager);
+            }
         }
-
-        // Konstanten für Bildschirm
-        const int SM_CXSCREEN = 0; // Screen Width
-        const int SM_CYSCREEN = 1; // Screen Height
-
-        // Konstanten für TopMost
-        static readonly IntPtr s_hWND_TOPMOST = new IntPtr(-1); // Handle für "Ganz oben"
-        const uint SWP_NOSIZE = 0x0001;     // Größe beibehalten
-        const uint SWP_NOMOVE = 0x0002;     // Position beibehalten (wird hier ignoriert, da MoveWindow das macht)
-        const uint SWP_SHOWWINDOW = 0x0040; // Fenster anzeigen
-
-        // =============================================================
-        //               MAIN PROGRAMM
-        // =============================================================
-
-        static void Main(string[] args)
+        catch (OperationCanceledException)
         {
-            // 1. Fenster in die Mitte schieben
-            CenterConsoleWindow();
-
-            // 2. Fenster "Always on Top" setzen
-            SetConsoleTopMost();
-
-            // Programmlogik
-            Console.WriteLine("==========================================");
-            Console.WriteLine("   FENSTER: ZENTRIERT & ALWAYS ON TOP");
-            Console.WriteLine("==========================================");
-            Console.WriteLine();
-            Console.WriteLine("Dieses Fenster schwebt nun über allen anderen.");
-            Console.WriteLine();
-            Console.WriteLine("Drücke eine Taste zum Beenden...");
-
-            Console.ReadKey();
+            if (!commandLineArgsReader.IsSilent())
+                AnsiConsole.MarkupLine("\n[yellow]Update aborted. Warning: Partial updates may have occurred.[/]");
         }
-
-        // =============================================================
-        //               HELFER METHODEN
-        // =============================================================
-
-        static void CenterConsoleWindow()
+        catch (Exception exception)
         {
-            IntPtr consoleHandle = GetConsoleWindow();
+            if (!commandLineArgsReader.IsSilent())
+                AnsiConsole.MarkupLine($"\n[red]An error occurred: {exception.Message}[/]");
 
-            // Aktuelle Größe holen
-            RECT r;
-            GetWindowRect(consoleHandle, out r);
-            int windowWidth = r.Right - r.Left;
-            int windowHeight = r.Bottom - r.Top;
+            await simpleLogger.WriteErrorAsync("An error occured.", exception);
 
-            // Bildschirmgröße holen
-            int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-            int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-            // Neue Position berechnen
-            int newX = (screenWidth - windowWidth) / 2;
-            int newY = (screenHeight - windowHeight) / 2;
-
-            // Verschieben
-            MoveWindow(consoleHandle, newX, newY, windowWidth, windowHeight, true);
+            System.Environment.Exit(1);
         }
-
-        static void SetConsoleTopMost()
+        finally
         {
-            IntPtr consoleHandle = GetConsoleWindow();
-
-            // Setzt das Fenster auf TopMost (-1), ignoriert aber Positionsargumente (SWP_NOMOVE | SWP_NOSIZE)
-            SetWindowPos(consoleHandle, s_hWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            s_cancellationTokenSource.Dispose();
         }
+    }
+
+    private static async Task StartSilentUpdate(UpdateManager updateManager)
+    {
+        Progress<int> silentProgress = new(_ => { });
+        await updateManager.ProcessUpdatesAsync(silentProgress, s_cancellationTokenSource.Token);
+    }
+
+    private static async Task StartUiUpdate(UpdateManager updateManager)
+    {
+        IRenderable layout = UiRenderer.CreateCenteredPanel("Initialising...", 0, HeaderText);
+
+        await AnsiConsole.Live(layout)
+            .AutoClear(false)
+            .Overflow(VerticalOverflow.Ellipsis)
+            .Cropping(VerticalOverflowCropping.Top)
+            .StartAsync(async ctx =>
+            {
+                Progress<int> progress = new(percentage =>
+                {
+                    IRenderable newLayout = UiRenderer.CreateCenteredPanel(
+                        $"Processing updates... ({percentage}%)",
+                        percentage,
+                        HeaderText);
+                    ctx.UpdateTarget(newLayout);
+                });
+
+                await updateManager.ProcessUpdatesAsync(progress, s_cancellationTokenSource.Token);
+
+                ctx.UpdateTarget(UiRenderer.CreateCenteredPanel("[green]Update completed! Closing...[/]", 100, HeaderText));
+
+                await Task.Delay(1500, s_cancellationTokenSource.Token);
+            });
+    }
+
+    private static void SubscribeToCancelKeyPress()
+    {
+        Console.CancelKeyPress += (sender, e) =>
+        {
+            e.Cancel = true;
+            s_cancellationTokenSource.Cancel();
+        };
     }
 }

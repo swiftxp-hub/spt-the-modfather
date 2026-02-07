@@ -20,7 +20,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
     ClientManifestRepository clientManifestRepository) : ISyncActionManager
 {
     public async Task ProcessSyncActionsAsync(ClientState clientState, SyncProposal syncProposal,
-        Progress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
+        IProgress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
     {
         string baseDirectory = clientState.BaseDirectory;
         string stagingDirectory = Path.GetFullPath(Path.Combine(baseDirectory, Constants.ModfatherDataDirectory, Constants.StagingDirectory));
@@ -117,7 +117,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
     }
 
     private async Task DownloadFileAsync(string stagingDirectory, string relativeFilePath,
-        Progress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
+        IProgress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
     {
         TimeSpan defaultTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
         RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);

@@ -17,7 +17,7 @@ public class ClientConfigurationRepository(ISimpleSptLogger simpleSptLogger,
         Constants.ModfatherDataDirectory, Constants.ClientConfigurationFile));
 
     private readonly string _stagingFilePath = Path.GetFullPath(Path.Combine(baseDirectoryLocator.GetBaseDirectory(),
-        Constants.ModfatherDataDirectory, Constants.StagingDirectory, Constants.ClientConfigurationFile));
+        Constants.ModfatherDataDirectory, Constants.StagingDirectory, Constants.ModfatherDataDirectory, Constants.ClientConfigurationFile));
 
     public async Task<ClientConfiguration> LoadOrCreateDefaultAsync(CancellationToken cancellationToken = default)
     {

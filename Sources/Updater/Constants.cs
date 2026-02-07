@@ -8,7 +8,13 @@ public static class Constants
 
     public const string EscapeFromTarkovExe = "EscapeFromTarkov.exe";
 
-    public const string PayloadPath = "TheModfather_Data/Payload";
+    public const string ModfatherDataDirectory = "TheModfather_Data";
+
+    public const string StagingDirectory = "Staging";
+
+    public const string ClientConfigurationFile = "clientConfiguration.json";
+
+    public const string ClientManifestFile = "clientManifest.json";
 
     public const string DeleteInstructionSuffix = ".delete";
 }

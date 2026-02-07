@@ -24,6 +24,9 @@ public static class Constants
 
     public const string DeleteInstructionExtension = ".delete";
 
+    public const string UpdaterExecutable = "SwiftXP.SPT.TheModfather.Updater.exe";
+
+
     /*
     public const string FikaHeadlessModGuid = "com.fika.headless";
 
