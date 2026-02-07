@@ -153,7 +153,7 @@ public class Plugin : BaseUnityPlugin
                 }
             }
 
-            if (_uiState.SyncActions.Count == 0 || !_syncProposal!.SyncActions.Any(x => x.IsSelected == true))
+            if (_syncProposal!.SyncActions.Count == 0 || !_syncProposal!.SyncActions.Any(x => x.IsSelected == true))
             {
                 StartGame();
 
