@@ -19,149 +19,175 @@ namespace SwiftXP.SPT.TheModfather.Client.Services;
 public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
     ClientManifestRepository clientManifestRepository) : ISyncActionManager
 {
-    public async Task ProcessSyncActionsAsync(ClientState clientState, SyncProposal syncProposal,
-        IProgress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
+    public async Task ProcessSyncActionsAsync(
+        ClientState clientState,
+        SyncProposal syncProposal,
+        IProgress<(float progress, string message)>? progressCallback = null,
+        CancellationToken cancellationToken = default)
     {
-        string baseDirectory = clientState.BaseDirectory;
-        string stagingDirectory = Path.GetFullPath(Path.Combine(baseDirectory, Constants.ModfatherDataDirectory, Constants.StagingDirectory));
-
-        if (!stagingDirectory.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Invalid staging path");
-
-        IReadOnlyList<SyncAction> syncActions = syncProposal.SyncActions;
-
-        ClientConfiguration clientConfiguration = clientState.ClientConfiguration;
-        ClientManifest currentClientManifest = syncProposal.ClientManifest;
-        List<string> excludePatterns = [.. clientConfiguration.ExcludePatterns];
-
-        ClientManifest newClientManifest = new(DateTimeOffset.UtcNow, RequestHandler.Host);
-        ServerManifest serverManifest = clientState.ServerManifest;
-
-        float updateProgress = 0f;
-        float actionsExecuted = 0;
-        float totalActions = 1 + syncActions.Count;
+        string stagingDirectory = GetAndValidateStagingDirectory(clientState.BaseDirectory);
 
         CleanUpStagingDirectory(stagingDirectory);
-        updateProgress = ++actionsExecuted / totalActions;
 
-        foreach (SyncAction syncAction in syncActions)
+        await ExecuteSyncOperationsAsync(
+            syncProposal.SyncActions,
+            stagingDirectory,
+            progressCallback,
+            cancellationToken);
+
+        ClientManifest newManifest = BuildNewClientManifest(
+            clientState.ServerManifest,
+            syncProposal,
+            clientState.ClientConfiguration);
+
+        await clientManifestRepository.SaveToStagingAsync(newManifest, cancellationToken);
+    }
+
+    private async Task ExecuteSyncOperationsAsync(
+        IReadOnlyList<SyncAction> syncActions,
+        string stagingDirectory,
+        IProgress<(float progress, string message)>? progressReporter,
+        CancellationToken cancellationToken)
+    {
+        List<SyncAction> selectedActions = [.. syncActions.Where(x => x.IsSelected)];
+        float total = selectedActions.Count + 1;
+        float current = 1;
+
+        progressReporter?.Report((current / total, "Starting synchronization..."));
+
+        foreach (SyncAction syncAction in selectedActions)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            if (syncAction.IsSelected == false)
-                continue;
+            current++;
 
             switch (syncAction.Type)
             {
                 case SyncActionType.Add:
                 case SyncActionType.Update:
-                    await DownloadFileAsync(stagingDirectory, syncAction.RelativeFilePath, progressCallback, cancellationToken);
+                    progressReporter?.Report((current / total, $"Downloading {syncAction.RelativeFilePath}..."));
+                    await DownloadFileWithTimeoutAsync(stagingDirectory, syncAction.RelativeFilePath, current / total, progressReporter, cancellationToken);
 
                     break;
 
                 case SyncActionType.Delete:
                 case SyncActionType.Blacklist:
-                    CreateDeleteInstruction(stagingDirectory, syncAction.RelativeFilePath);
+                    progressReporter?.Report((current / total, $"Staging removal for {syncAction.RelativeFilePath}..."));
+                    await CreateDeleteInstruction(stagingDirectory, syncAction.RelativeFilePath, cancellationToken);
 
                     break;
             }
         }
+    }
 
-        Dictionary<string, SyncAction> userRejectedActions = syncActions.Where(a => !a.IsSelected).ToDictionary(a => a.RelativeFilePath);
-        Dictionary<string, SyncAction> acceptedActions = syncActions.Where(a => a.IsSelected).ToDictionary(a => a.RelativeFilePath);
+    private async Task DownloadFileWithTimeoutAsync(string stagingDir, string relativePath, float progress,
+        IProgress<(float progress, string message)>? progressReporter, CancellationToken cancellationToken)
+    {
+        TimeSpan originalTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
+        try
+        {
+            RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
+
+            string url = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/{Uri.EscapeDataString(relativePath)}";
+            string destPath = Path.Combine(stagingDir, relativePath);
+
+            ValidatePathSecurity(stagingDir, destPath);
+            EnsureDirectoryExists(destPath);
+
+            await RequestHandler.HttpClient.DownloadWithCancellationAsync(url, destPath, (downloadProgress) =>
+            {
+                string downloadText = $"Download Speed: {downloadProgress.DownloadSpeed} | Progress: {downloadProgress.FileSizeInfo}";
+                progressReporter?.Report((progress, downloadText));
+            }, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            simpleSptLogger.LogError($"Failed to download '{relativePath}': {ex.Message}");
+
+            throw;
+        }
+        finally
+        {
+            RequestHandler.HttpClient.HttpClient.Timeout = originalTimeout;
+        }
+    }
+
+    private static async Task CreateDeleteInstruction(string stagingDir, string relativePath, CancellationToken cancellationToken = default)
+    {
+        string path = Path.Combine(stagingDir, relativePath + Constants.DeleteInstructionExtension);
+        EnsureDirectoryExists(path);
+
+        await File.WriteAllTextAsync(path, string.Empty, cancellationToken);
+    }
+
+    private static ClientManifest BuildNewClientManifest(
+        ServerManifest serverManifest,
+        SyncProposal syncProposal,
+        ClientConfiguration clientConfiguration)
+    {
+        ClientManifest newManifest = new(DateTimeOffset.UtcNow, RequestHandler.Host);
+
+        Dictionary<string, SyncAction> acceptedMap = syncProposal.SyncActions.Where(a => a.IsSelected).ToDictionary(a => a.RelativeFilePath);
+        Dictionary<string, SyncAction> rejectedMap = syncProposal.SyncActions.Where(a => !a.IsSelected).ToDictionary(a => a.RelativeFilePath);
 
         foreach (ServerFileManifest serverFileManifest in serverManifest.Files)
         {
             if (serverFileManifest.RelativeFilePath.IsExcludedByPatterns(clientConfiguration.ExcludePatterns))
                 continue;
 
-            if (acceptedActions.TryGetValue(serverFileManifest.RelativeFilePath, out SyncAction? syncAction))
+            if (acceptedMap.TryGetValue(serverFileManifest.RelativeFilePath, out SyncAction? action))
             {
-                if (syncAction.Type == SyncActionType.Add ||
-                   syncAction.Type == SyncActionType.Update ||
-                   syncAction.Type == SyncActionType.Adopt)
-                {
-                    newClientManifest.AddOrUpdateFile(new ClientFileManifest(
-                        serverFileManifest.RelativeFilePath,
-                        serverFileManifest.Hash,
-                        serverFileManifest.SizeInBytes,
-                        DateTimeOffset.UtcNow));
-                }
-            }
-            else if (userRejectedActions.ContainsKey(serverFileManifest.RelativeFilePath))
-            {
-                ClientFileManifest oldEntry = currentClientManifest.Files.FirstOrDefault(x => x.RelativeFilePath == serverFileManifest.RelativeFilePath);
+                if (action.Type is SyncActionType.Add or SyncActionType.Update or SyncActionType.Adopt)
+                    newManifest.AddOrUpdateFile(ClientFileManifest.ToClientManifestEntry(serverFileManifest));
 
+                continue;
+            }
+
+            if (rejectedMap.ContainsKey(serverFileManifest.RelativeFilePath))
+            {
+                ClientFileManifest oldEntry = syncProposal.ClientManifest.Files.FirstOrDefault(x => x.RelativeFilePath == serverFileManifest.RelativeFilePath);
                 if (oldEntry != null)
-                    newClientManifest.AddOrUpdateFile(oldEntry);
+                    newManifest.AddOrUpdateFile(oldEntry);
+
+                continue;
             }
-            else
-            {
-                newClientManifest.AddOrUpdateFile(new ClientFileManifest(
-                    serverFileManifest.RelativeFilePath,
-                    serverFileManifest.Hash,
-                    serverFileManifest.SizeInBytes,
-                    DateTimeOffset.UtcNow));
-            }
+
+            newManifest.AddOrUpdateFile(ClientFileManifest.ToClientManifestEntry(serverFileManifest));
         }
 
-        await clientManifestRepository.SaveToStagingAsync(newClientManifest, cancellationToken);
+        return newManifest;
     }
 
-    private static void CleanUpStagingDirectory(string stagingPath)
+    private static string GetAndValidateStagingDirectory(string baseDirectory)
     {
-        if (Directory.Exists(stagingPath))
-            Directory.Delete(stagingPath, true);
+        string path = Path.GetFullPath(Path.Combine(baseDirectory, Constants.ModfatherDataDirectory, Constants.StagingDirectory));
 
-        Directory.CreateDirectory(stagingPath);
+        if (!path.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Invalid staging path configuration.");
+
+        return path;
     }
 
-    private async Task DownloadFileAsync(string stagingDirectory, string relativeFilePath,
-        IProgress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default)
+    private static void ValidatePathSecurity(string rootDir, string fullPath)
     {
-        TimeSpan defaultTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
-        RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
+        string normalizedRoot = Path.GetFullPath(rootDir) + Path.DirectorySeparatorChar;
 
-        try
-        {
-            string urlPath = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/" + Uri.EscapeDataString(relativeFilePath);
-            string destinationPath = Path.GetFullPath(Path.Combine(stagingDirectory, relativeFilePath));
-
-            if (!destinationPath.StartsWith(stagingDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                throw new UnauthorizedAccessException($"Security Alert: Blocked attempt to write outside payload directory: {destinationPath}");
-
-            string? directoryPath = Path.GetDirectoryName(destinationPath);
-
-            if (!string.IsNullOrEmpty(directoryPath))
-                Directory.CreateDirectory(directoryPath);
-
-            await RequestHandler.HttpClient.DownloadWithCancellationAsync(urlPath, destinationPath, (downloadProgress) =>
-            {
-
-            }, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            simpleSptLogger.LogError($"Failed to download '{relativeFilePath}': {ex.Message}");
-
-            throw;
-        }
-        finally
-        {
-            RequestHandler.HttpClient.HttpClient.Timeout = defaultTimeout;
-        }
+        if (!Path.GetFullPath(fullPath).StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException($"Security Alert: Path traversal attempt blocked: {fullPath}");
     }
 
-    private static void CreateDeleteInstruction(string stagingDirectory, string relativeFilePath)
+    private static void CleanUpStagingDirectory(string path)
     {
-        string instructionPath = Path.GetFullPath(Path.Combine(stagingDirectory, relativeFilePath + Constants.DeleteInstructionExtension));
+        if (Directory.Exists(path))
+            Directory.Delete(path, true);
 
-        string? directory = Path.GetDirectoryName(instructionPath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        Directory.CreateDirectory(path);
+    }
 
-        File.WriteAllText(instructionPath, string.Empty);
+    private static void EnsureDirectoryExists(string filePath)
+    {
+        string? dir = Path.GetDirectoryName(filePath);
+
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
     }
 }

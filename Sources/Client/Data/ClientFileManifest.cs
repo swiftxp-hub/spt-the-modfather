@@ -6,4 +6,14 @@ public record class ClientFileManifest(
     string RelativeFilePath,
     string Hash,
     long SizeInBytes,
-    DateTimeOffset InstalledAt);
+    DateTimeOffset InstalledAt)
+{
+    public static ClientFileManifest ToClientManifestEntry(ServerFileManifest serverFile)
+    {
+        return new ClientFileManifest(
+            serverFile.RelativeFilePath,
+            serverFile.Hash,
+            serverFile.SizeInBytes,
+            DateTimeOffset.UtcNow);
+    }
+}

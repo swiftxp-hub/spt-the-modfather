@@ -4,4 +4,8 @@
     <Project Path="Sources/Server/SwiftXP.SPT.TheModfather.Server.csproj" />
     <Project Path="Sources/Updater/SwiftXP.SPT.TheModfather.Updater.csproj" />
   </Folder>
+
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Updater.Tests/SwiftXP.SPT.TheModfather.Updater.Tests.csproj" />
+  </Folder>
 </Solution>

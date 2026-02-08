@@ -1,3 +1,7 @@
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using SwiftXP.SPT.TheModfather.Updater.Diagnostics;
 using SwiftXP.SPT.TheModfather.Updater.Logging;
 
@@ -66,7 +70,7 @@ public class UpdateManager(ISimpleLogger simpleLogger,
     {
         await simpleLogger.WriteMessageAsync("Processing delete instructions...", cancellationToken);
 
-        string[] instructionFiles = Directory.GetFiles(stagingDirectory, $"*.{Constants.DeleteInstructionSuffix}", SearchOption.AllDirectories);
+        string[] instructionFiles = Directory.GetFiles(stagingDirectory, $"*{Constants.DeleteInstructionSuffix}", SearchOption.AllDirectories);
 
         await simpleLogger.WriteMessageAsync($"{instructionFiles.Length} delete instructions found", cancellationToken);
 

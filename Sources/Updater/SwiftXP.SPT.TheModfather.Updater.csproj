@@ -1,9 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <AssemblyName>SwiftXP.SPT.TheModfather.Updater</AssemblyName>
+    <Product>The Modfather</Product>
+    <RootNamespace>SwiftXP.SPT.TheModfather.Updater</RootNamespace>
+    <OutputType>Exe</OutputType>
 
     <PublishAot>true</PublishAot>
   </PropertyGroup>
@@ -19,6 +24,12 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="9.0.9" />
 
     <PackageReference Include="Spectre.Console" Version="0.54.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>SwiftXP.SPT.TheModfather.Updater.Tests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <PropertyGroup>
@@ -46,4 +57,5 @@
     <Copy SourceFiles="@(PublishedFiles)"
           DestinationFolder="$(MSBuildProjectDirectory)/../../Publish/" />
   </Target>
+
 </Project>

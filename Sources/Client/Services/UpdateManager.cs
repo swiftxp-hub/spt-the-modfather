@@ -25,117 +25,183 @@ public class UpdateManager(ISimpleSptLogger simpleSptLogger,
     {
         List<SyncAction> syncActions = [];
 
-        float currentProgress = 0f;
-
-        float stepsTaken = 0;
-        float totalSteps = 4;
-
-        progressCallback?.Report((currentProgress, $"Loading resources..."));
+        Report(progressCallback, 0.1f, "Loading resources...");
 
         string baseDirectory = clientState.BaseDirectory;
-
-        ClientConfiguration clientConfiguration = clientState.ClientConfiguration;
-        ClientManifest? clientManifest = clientState.ClientManifest ?? new ClientManifest(DateTimeOffset.UtcNow, RequestHandler.Host);
+        ClientConfiguration clientConfig = clientState.ClientConfiguration;
         ServerManifest serverManifest = clientState.ServerManifest;
-        FileHashBlacklist fileHashBlacklist = clientState.FileHashBlacklist;
+        FileHashBlacklist blacklist = clientState.FileHashBlacklist;
 
-        // if (clientManifest == null)
-        // {
-        //     progressCallback?.Report((currentProgress, $"Client-Manifest missing. Creating temporary manifest..."));
-        //     clientManifest = await BuildTempClientManifest(baseDirectory, serverManifest, cancellationToken);
-        // }
+        ClientManifest clientManifest = clientState.ClientManifest
+                             ?? new ClientManifest(DateTimeOffset.UtcNow, RequestHandler.Host);
 
-        currentProgress = ++stepsTaken / totalSteps;
-        progressCallback?.Report((currentProgress, $"Processing server-manifest..."));
+        Report(progressCallback, 0.3f, "Processing server-manifest...");
+        HashSet<string> processedServerPaths = [];
 
-        HashSet<string> processedPaths = [];
+        await AnalyzeServerFilesAsync(
+            baseDirectory,
+            serverManifest,
+            clientManifest,
+            clientConfig,
+            syncActions,
+            processedServerPaths,
+            cancellationToken);
 
-        foreach (ServerFileManifest serverFileManifest in serverManifest.Files)
+        Report(progressCallback, 0.6f, "Processing client-manifest...");
+
+        await AnalyzeLocalFiles(
+            baseDirectory,
+            clientManifest,
+            clientConfig,
+            syncActions,
+            processedServerPaths,
+            cancellationToken);
+
+        Report(progressCallback, 0.8f, "Processing blacklist...");
+
+        await AnalyzeBlacklistAsync(
+            baseDirectory,
+            blacklist,
+            syncActions,
+            cancellationToken);
+
+        Report(progressCallback, 1.0f, "Finished update-check...");
+
+        syncActions = [.. syncActions.OrderBy(x => x.Type).ThenBy(x => x.RelativeFilePath)];
+
+        return new SyncProposal(clientManifest, syncActions);
+    }
+
+    private async Task AnalyzeServerFilesAsync(
+        string baseDirectory,
+        ServerManifest serverManifest,
+        ClientManifest clientManifest,
+        ClientConfiguration clientConfig,
+        List<SyncAction> syncActions,
+        HashSet<string> processedPaths,
+        CancellationToken cancellationToken = default)
+    {
+        foreach (ServerFileManifest serverFile in serverManifest.Files)
         {
-            processedPaths.Add(serverFileManifest.RelativeFilePath);
+            cancellationToken.ThrowIfCancellationRequested();
+            processedPaths.Add(serverFile.RelativeFilePath);
 
-            if (serverFileManifest.RelativeFilePath.IsExcludedByPatterns(clientConfiguration.ExcludePatterns))
+            if (serverFile.RelativeFilePath.IsExcludedByPatterns(clientConfig.ExcludePatterns))
             {
-                simpleSptLogger.LogInfo($"Ignoring server-update for file (excluded): {serverFileManifest.RelativeFilePath}");
+                simpleSptLogger.LogInfo($"Ignoring server-update for file (excluded): {serverFile.RelativeFilePath}");
                 continue;
             }
 
-            string filePath = Path.Combine(baseDirectory, serverFileManifest.RelativeFilePath);
+            string localFullPath = Path.Combine(baseDirectory, serverFile.RelativeFilePath);
+            SyncActionType? actionType = await DetermineServerFileActionAsync(localFullPath, serverFile, clientManifest, cancellationToken);
 
-            FileInfo? fileInfo = filePath.GetFileInfo();
-            bool isTrackedInManifest = clientManifest?.Files.Any(x => x.RelativeFilePath == serverFileManifest.RelativeFilePath) ?? false;
-
-            if (fileInfo != null)
+            if (actionType.HasValue)
             {
-                if (fileInfo.Length != serverFileManifest.SizeInBytes
-                    || (await xxHash128FileHasher.GetFileHashAsync(fileInfo, CancellationToken.None)) != serverFileManifest.Hash)
-                {
-                    syncActions.Add(new(serverFileManifest.RelativeFilePath, SyncActionType.Update,
-                        serverFileManifest.Hash, serverFileManifest.SizeInBytes));
-                }
-                else if (!isTrackedInManifest)
-                {
-                    syncActions.Add(new(serverFileManifest.RelativeFilePath, SyncActionType.Adopt,
-                        serverFileManifest.Hash, serverFileManifest.SizeInBytes));
-                }
-            }
-            else
-            {
-                syncActions.Add(new(serverFileManifest.RelativeFilePath, SyncActionType.Add,
-                    serverFileManifest.Hash, serverFileManifest.SizeInBytes));
+                syncActions.Add(new SyncAction(
+                    serverFile.RelativeFilePath,
+                    actionType.Value,
+                    serverFile.Hash,
+                    serverFile.SizeInBytes));
             }
         }
+    }
 
-        currentProgress = ++stepsTaken / totalSteps;
-        progressCallback?.Report((currentProgress, $"Processing client-manifest..."));
-
-        foreach (ClientFileManifest clientFileManifest in clientManifest?.Files ?? [])
+#pragma warning disable CS1998
+    private async static Task AnalyzeLocalFiles(
+        string baseDirectory,
+        ClientManifest clientManifest,
+        ClientConfiguration clientConfig,
+        List<SyncAction> syncActions,
+        HashSet<string> processedServerPaths,
+        CancellationToken cancellationToken = default)
+    {
+#pragma warning restore CS1998
+        foreach (ClientFileManifest clientFile in clientManifest.Files)
         {
-            if (processedPaths.Contains(clientFileManifest.RelativeFilePath))
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (processedServerPaths.Contains(clientFile.RelativeFilePath))
                 continue;
 
-            if (clientFileManifest.RelativeFilePath.IsExcludedByPatterns(clientConfiguration.ExcludePatterns))
+            if (clientFile.RelativeFilePath.IsExcludedByPatterns(clientConfig.ExcludePatterns))
             {
-                syncActions.Add(new(clientFileManifest.RelativeFilePath, SyncActionType.Untrack));
+                syncActions.Add(new SyncAction(clientFile.RelativeFilePath, SyncActionType.Untrack));
 
                 continue;
             }
 
-            string filePath = Path.Combine(baseDirectory, clientFileManifest.RelativeFilePath);
-            FileInfo? fileInfo = filePath.GetFileInfo();
+            string fullPath = Path.Combine(baseDirectory, clientFile.RelativeFilePath);
+            bool exists = File.Exists(fullPath);
 
-            if (fileInfo != null)
-            {
-                syncActions.Add(new(clientFileManifest.RelativeFilePath, SyncActionType.Delete));
-            }
-            else
-            {
-                syncActions.Add(new(clientFileManifest.RelativeFilePath, SyncActionType.Untrack));
-            }
+            SyncActionType type = exists ? SyncActionType.Delete : SyncActionType.Untrack;
+
+            syncActions.Add(new SyncAction(clientFile.RelativeFilePath, type));
         }
+    }
 
-        currentProgress = ++stepsTaken / totalSteps;
-        progressCallback?.Report((currentProgress, $"Processing blacklist..."));
+    private async Task AnalyzeBlacklistAsync(
+        string baseDirectory,
+        FileHashBlacklist blacklist,
+        List<SyncAction> syncActions,
+        CancellationToken cancellationToken)
+    {
+        if (!blacklist.Any())
+            return;
 
-        if (fileHashBlacklist.Any())
+        string pluginsDir = Path.GetFullPath(Path.Combine(baseDirectory, Constants.BepInExDirectory));
+        IEnumerable<FileInfo> dllFiles = pluginsDir.FindFilesByPattern(["**/*.dll"], ["cache/*"]);
+
+        foreach (FileInfo fileInfo in dllFiles)
         {
-            IEnumerable<FileInfo> filesInfos = Path.GetFullPath(Path.Combine(baseDirectory, Constants.BepInExDirectory))
-                .FindFilesByPattern(["**/*.dll"], ["cache/*"]);
+            cancellationToken.ThrowIfCancellationRequested();
 
-            foreach (FileInfo fileInfo in filesInfos)
+            string? hash = await xxHash128FileHasher.GetFileHashAsync(fileInfo, cancellationToken);
+
+            if (hash != null && blacklist.Contains(hash))
             {
-                string? hash = await xxHash128FileHasher.GetFileHashAsync(fileInfo, CancellationToken.None);
-                if (hash != null && fileHashBlacklist.Contains(hash))
-                {
-                    string relativeFilePath = Path.GetRelativePath(baseDirectory, fileInfo.FullName).GetWebFriendlyPath();
-                    syncActions.Add(new(relativeFilePath, SyncActionType.Blacklist));
-                }
+                string relPath = Path.GetRelativePath(baseDirectory, fileInfo.FullName).GetWebFriendlyPath();
+                syncActions.Add(new SyncAction(relPath, SyncActionType.Blacklist));
+            }
+        }
+    }
+
+    private async Task<SyncActionType?> DetermineServerFileActionAsync(
+        string localPath,
+        ServerFileManifest serverFile,
+        ClientManifest clientManifest,
+        CancellationToken cancellationToken = default)
+    {
+        FileInfo fileInfo = new(localPath);
+        if (!fileInfo.Exists)
+            return SyncActionType.Add;
+
+        bool hashMismatch = false;
+
+        if (fileInfo.Length != serverFile.SizeInBytes)
+        {
+            hashMismatch = true;
+        }
+        else
+        {
+            string? localHash = await xxHash128FileHasher.GetFileHashAsync(fileInfo, cancellationToken);
+            if (localHash != serverFile.Hash)
+            {
+                hashMismatch = true;
             }
         }
 
-        currentProgress = ++stepsTaken / totalSteps;
-        progressCallback?.Report((currentProgress, $"Finished update-check..."));
+        if (hashMismatch)
+            return SyncActionType.Update;
 
-        return new(clientManifest!, syncActions);
+        bool isTracked = clientManifest.Files.Any(x => x.RelativeFilePath == serverFile.RelativeFilePath);
+        if (!isTracked)
+            return SyncActionType.Adopt;
+
+        return null;
+    }
+
+    private static void Report(IProgress<(float, string)>? progress, float value, string message)
+    {
+        progress?.Report((value, message));
     }
 }

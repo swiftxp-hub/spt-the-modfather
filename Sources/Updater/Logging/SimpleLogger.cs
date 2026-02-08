@@ -1,4 +1,9 @@
-﻿namespace SwiftXP.SPT.TheModfather.Updater.Logging;
+﻿using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace SwiftXP.SPT.TheModfather.Updater.Logging;
 
 public class SimpleLogger(string baseDirectory) : ISimpleLogger, IDisposable
 {
@@ -27,10 +32,13 @@ public class SimpleLogger(string baseDirectory) : ISimpleLogger, IDisposable
 
         try
         {
-            string logLine = $"SwiftXP.SPT.TheModfather.Updater | {DateTime.Now:yyyy-MM-dd HH:mm:ss} | {message}{System.Environment.NewLine}";
+            string logLine = $"SwiftXP.SPT.TheModfather.Updater | {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} | {message}{System.Environment.NewLine}";
             await File.AppendAllTextAsync(_logPath, logLine, cancellationToken);
         }
-        catch { }
+        catch (Exception exception)
+        {
+            await Console.Error.WriteLineAsync($"Error writing to log: {exception.Message}");
+        }
         finally
         {
             _lock.Release();

@@ -9,12 +9,13 @@
 
     <AssemblyName>SwiftXP.SPT.TheModfather.Client</AssemblyName>
     <Product>The Modfather</Product>
+    <RootNamespace>SwiftXP.SPT.TheModfather.Client</RootNamespace>
+    <OutputType>Library</OutputType>
+
     <RestoreAdditionalProjectSources>
       https://api.nuget.org/v3/index.json;
       https://nuget.bepinex.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <RootNamespace>SwiftXP.SPT.TheModfather.Client</RootNamespace>
-    <OutputType>Library</OutputType>
 
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
@@ -47,8 +48,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/**/*.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common.netstandard/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Sources/Common/**/*.cs" />
+    <Compile Remove="$(MSBuildThisFileDirectory)/../Common/Sources/Common/bin/**/*" />
+    <Compile Remove="$(MSBuildThisFileDirectory)/../Common/Sources/Common/obj/**/*" />
+
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common.netstandard/Sources/Common/**/*.cs" />
+    <Compile Remove="$(MSBuildThisFileDirectory)/../Common.netstandard/Sources/Common/bin/**/*" />
+    <Compile Remove="$(MSBuildThisFileDirectory)/../Common.netstandard/Sources/Common/obj/**/*" />
   </ItemGroup>
 
   <ItemGroup>

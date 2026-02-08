@@ -1,4 +1,7 @@
-﻿using Spectre.Console;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Spectre.Console;
 using Spectre.Console.Rendering;
 using SwiftXP.SPT.TheModfather.Updater.Diagnostics;
 using SwiftXP.SPT.TheModfather.Updater.Environment;
@@ -20,7 +23,9 @@ public static class Program
 
         SimpleLogger simpleLogger = new(AppContext.BaseDirectory);
         CommandLineArgsReader commandLineArgsReader = new();
-        EFTProcessWatcher eftProcessWatcher = new(simpleLogger, commandLineArgsReader);
+        ProcessService processService = new();
+
+        EFTProcessWatcher eftProcessWatcher = new(simpleLogger, commandLineArgsReader, processService);
 
         UpdateManager updateManager = new(simpleLogger, eftProcessWatcher);
 

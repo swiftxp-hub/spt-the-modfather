@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SwiftXP.SPT.Common.Environment;
-using SwiftXP.SPT.Common.Json;
+using SwiftXP.SPT.Common.NETStd.Json;
 using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.TheModfather.Server.Data;
 

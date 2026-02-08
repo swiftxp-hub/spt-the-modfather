@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.Models.Utils;
 using SwiftXP.SPT.Common.Environment;
-using SwiftXP.SPT.Common.Json;
+using SwiftXP.SPT.Common.NET9.Json;
 using SwiftXP.SPT.TheModfather.Server.Data;
 
 namespace SwiftXP.SPT.TheModfather.Server.Repositories;

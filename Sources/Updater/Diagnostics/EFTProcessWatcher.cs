@@ -1,11 +1,15 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using SwiftXP.SPT.TheModfather.Updater.Environment;
 using SwiftXP.SPT.TheModfather.Updater.Logging;
 
 namespace SwiftXP.SPT.TheModfather.Updater.Diagnostics;
 
-public class EFTProcessWatcher(ISimpleLogger simpleLogger, ICommandLineArgsReader commandLineArgsReader)
-    : IEFTProcessWatcher
+public class EFTProcessWatcher(ISimpleLogger simpleLogger,
+    ICommandLineArgsReader commandLineArgsReader,
+    IProcessService processService) : IEFTProcessWatcher
 {
     public async Task<bool> WaitForProcessToCloseAsync(CancellationToken cancellationToken = default)
     {
@@ -25,7 +29,10 @@ public class EFTProcessWatcher(ISimpleLogger simpleLogger, ICommandLineArgsReade
 
         try
         {
-            Process process = Process.GetProcessById(processId.Value);
+            IProcessWrapper? process = processService.GetProcessById(processId.Value);
+            if (process == null)
+                return true;
+
             Stopwatch sw = Stopwatch.StartNew();
 
             while (!process.HasExited)
@@ -34,6 +41,7 @@ public class EFTProcessWatcher(ISimpleLogger simpleLogger, ICommandLineArgsReade
                     return false;
 
                 await Task.Delay(500, cancellationToken);
+                process.Refresh();
             }
 
             return true;
@@ -58,7 +66,7 @@ public class EFTProcessWatcher(ISimpleLogger simpleLogger, ICommandLineArgsReade
             return eftProcessId;
         }
 
-        Process[] tarkovProcesses = Process.GetProcessesByName("EscapeFromTarkov");
+        IProcessWrapper[] tarkovProcesses = processService.GetProcessesByName("EscapeFromTarkov");
         if (tarkovProcesses.Length > 0)
         {
             await simpleLogger.WriteMessageAsync($"EFT-Process ID from GetProcessesByName: {tarkovProcesses[0].Id}", cancellationToken);
@@ -66,7 +74,7 @@ public class EFTProcessWatcher(ISimpleLogger simpleLogger, ICommandLineArgsReade
             return tarkovProcesses[0].Id;
         }
 
-        Process[] beProcesses = Process.GetProcessesByName("EscapeFromTarkov_BE");
+        IProcessWrapper[] beProcesses = processService.GetProcessesByName("EscapeFromTarkov_BE");
         if (beProcesses.Length > 0)
         {
             await simpleLogger.WriteMessageAsync($"EFT-Process ID from GetProcessesByName (BE): {beProcesses[0].Id}", cancellationToken);

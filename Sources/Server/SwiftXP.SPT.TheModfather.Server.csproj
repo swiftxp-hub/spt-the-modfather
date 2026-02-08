@@ -28,15 +28,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Environment/Interfaces/IBaseDirectoryLocator.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Environment/BaseDirectoryLocator.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/IO/**/*.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Runtime/**/*.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Services/**/*.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Extensions/**/*.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Utilities/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Sources/Common/Environment/Interfaces/IBaseDirectoryLocator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Sources/Common/Environment/BaseDirectoryLocator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Sources/Common/Extensions/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Sources/Common/IO/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common/Sources/Common/Runtime/**/*.cs" />
 
-    <Compile Include="$(MSBuildThisFileDirectory)/../Common.net9/**/*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/../Common.net9/Sources/Common/Json/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -68,8 +66,6 @@
         <PublishedFiles Include="$(PublishDir)SwiftXP.SPT.TheModfather.Server.dll" />
         <PublishedFiles Include="$(PublishDir)SwiftXP.SPT.TheModfather.Server.LICENSES.txt" />
     </ItemGroup>
-
-    <RemoveDir Directories="$(MSBuildProjectDirectory)/../../Publish" />
 
     <Copy SourceFiles="@(PublishedFiles)"
           DestinationFolder="$(MSBuildProjectDirectory)/../../Publish/SPT/user/mods/com.swiftxp.spt.themodfather" />

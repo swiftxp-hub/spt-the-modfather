@@ -9,6 +9,8 @@ public class UpdateUiState
 
     public float Progress { get; set; }
 
+    public string ProgressHeader { get; set; } = string.Empty;
+
     public string ProgressDetail { get; set; } = string.Empty;
 
     public bool IsError { get; set; }

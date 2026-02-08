@@ -32,23 +32,21 @@ public class ModHttpListener(ISptLogger<ModHttpListener> sptLogger,
     {
         try
         {
-            PathString path = context.Request.Path;
-
-            if (path.Equals(s_pathGetServerManifest, StringComparison.OrdinalIgnoreCase))
+            if (IsRoute(context, s_pathGetServerManifest))
             {
                 await HandleGetServerManifestAsync(context);
             }
-            else if (path.StartsWithSegments(s_pathGetFile, StringComparison.OrdinalIgnoreCase))
-            {
-                await HandleGetFileAsync(context);
-            }
-            else if (path.Equals(s_pathGetFileHashBlacklist, StringComparison.OrdinalIgnoreCase))
+            else if (IsRoute(context, s_pathGetFileHashBlacklist))
             {
                 await HandleGetFileHashBlacklistAsync(context);
             }
+            else if (context.Request.Path.StartsWithSegments(s_pathGetFile, out PathString remainingPath))
+            {
+                await HandleGetFileAsync(context, remainingPath);
+            }
             else
             {
-                await HandleUnknownRouteAsync(context, path);
+                await HandleUnknownRouteAsync(context, context.Request.Path);
             }
         }
         catch (Exception ex)
@@ -61,22 +59,21 @@ public class ModHttpListener(ISptLogger<ModHttpListener> sptLogger,
 
     private async Task HandleGetServerManifestAsync(HttpContext context)
     {
-        await Task.Delay(2000);
-
         ServerManifest result = await serverManifestManager.GetServerManifestAsync();
 
         await context.Response.WriteAsJsonAsync(result, context.RequestAborted);
     }
 
-    private async Task HandleGetFileAsync(HttpContext context)
+    private async Task HandleGetFileHashBlacklistAsync(HttpContext context)
     {
-        string requestedFilePath = string.Empty;
-        if (context.Request.Path.StartsWithSegments(s_pathGetFile, out PathString remainingPath))
-        {
-            requestedFilePath = remainingPath.Value?.TrimStart('/') ?? string.Empty;
-        }
+        ServerConfiguration serverConfiguration = await serverConfigurationRepository.LoadOrCreateDefaultAsync(context.RequestAborted);
 
-        requestedFilePath = Uri.UnescapeDataString(requestedFilePath);
+        await context.Response.WriteAsJsonAsync(serverConfiguration.FileHashBlacklist, context.RequestAborted);
+    }
+
+    private async Task HandleGetFileAsync(HttpContext context, PathString remainingPath)
+    {
+        string requestedFilePath = Uri.UnescapeDataString(remainingPath.Value?.TrimStart('/') ?? string.Empty);
 
         if (string.IsNullOrWhiteSpace(requestedFilePath))
         {
@@ -87,8 +84,8 @@ public class ModHttpListener(ISptLogger<ModHttpListener> sptLogger,
         }
 
         ServerConfiguration serverConfiguration = await serverConfigurationRepository.LoadOrCreateDefaultAsync(context.RequestAborted);
-
         FileInfo? fileInfo = serverFileResolver.GetFileInfo(requestedFilePath, serverConfiguration.IncludePatterns, serverConfiguration.ExcludePatterns);
+
         if (fileInfo != null && fileInfo.Exists)
         {
             context.Response.ContentType = ContentTypeUtility.GetContentType(fileInfo.FullName, fileInfo.Extension);
@@ -105,19 +102,16 @@ public class ModHttpListener(ISptLogger<ModHttpListener> sptLogger,
         }
     }
 
-    private async Task HandleGetFileHashBlacklistAsync(HttpContext context)
-    {
-        ServerConfiguration serverConfiguration = await serverConfigurationRepository.LoadOrCreateDefaultAsync(context.RequestAborted);
-
-        await context.Response.WriteAsJsonAsync(serverConfiguration.FileHashBlacklist, context.RequestAborted);
-    }
-
     private Task HandleUnknownRouteAsync(HttpContext context, PathString path)
     {
         sptLogger.Warning($"{Constants.LoggerPrefix}[WARNING] Unknown route: {path}");
-
         context.Response.StatusCode = 404;
 
         return Task.CompletedTask;
+    }
+
+    private static bool IsRoute(HttpContext context, PathString route)
+    {
+        return context.Request.Path.Equals(route, StringComparison.OrdinalIgnoreCase);
     }
 }
