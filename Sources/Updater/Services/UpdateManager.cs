@@ -29,11 +29,13 @@ public class UpdateManager(ISimpleLogger simpleLogger,
                         progress.Report((int)Math.Round((double)++processedFiles / totalFiles.Length * 100));
                     }, cancellationToken);
 
-
                     await MoveStagingFilesAsync(baseDirectory!, stagingDirectory!, () =>
                     {
                         progress.Report((int)Math.Round((double)++processedFiles / totalFiles.Length * 100));
                     }, cancellationToken);
+
+                    await FinalizeManifestAsync(baseDirectory!, stagingDirectory!, cancellationToken);
+                    progress.Report(100);
 
                     await CleanUpPayloadDirectory(stagingDirectory!, cancellationToken);
                 }
@@ -117,6 +119,7 @@ public class UpdateManager(ISimpleLogger simpleLogger,
         await simpleLogger.WriteMessageAsync("Moving files...", cancellationToken);
 
         string[] filePaths = Directory.GetFiles(stagingDirectory, "*", SearchOption.AllDirectories);
+        string manifestRelativePath = Path.Combine(Constants.ModfatherDataDirectory, Constants.ClientManifestFile);
 
         await simpleLogger.WriteMessageAsync($"Found {filePaths.Length} file(s) to be moved", cancellationToken);
 
@@ -128,6 +131,12 @@ public class UpdateManager(ISimpleLogger simpleLogger,
             cancellationToken.ThrowIfCancellationRequested();
 
             string relativePath = Path.GetRelativePath(stagingDirectory, sourceFilePath);
+            if (relativePath.Equals(manifestRelativePath, StringComparison.OrdinalIgnoreCase))
+            {
+                await simpleLogger.WriteMessageAsync($"Skipping manifest file for final move: {sourceFilePath}", cancellationToken);
+                continue;
+            }
+
             string targetFilePath = Path.Combine(baseDirectory, relativePath);
 
             string? directoryPath = Path.GetDirectoryName(targetFilePath);
@@ -144,6 +153,28 @@ public class UpdateManager(ISimpleLogger simpleLogger,
 
         if (counter > 0)
             await simpleLogger.WriteMessageAsync($"Moved {counter} files", cancellationToken);
+    }
+
+    private async Task FinalizeManifestAsync(string baseDirectory, string stagingDirectory, CancellationToken cancellationToken)
+    {
+        string manifestRelativePath = Path.Combine(Constants.ModfatherDataDirectory, Constants.ClientManifestFile);
+        string sourcePath = Path.Combine(stagingDirectory, manifestRelativePath);
+        string targetPath = Path.Combine(baseDirectory, manifestRelativePath);
+
+        if (File.Exists(sourcePath))
+        {
+            await simpleLogger.WriteMessageAsync($"Finalizing update: Moving manifest to {targetPath}", cancellationToken);
+
+            string? targetDir = Path.GetDirectoryName(targetPath);
+            if (targetDir != null)
+                Directory.CreateDirectory(targetDir);
+
+            File.Move(sourcePath, targetPath, true);
+        }
+        else
+        {
+            await simpleLogger.WriteMessageAsync("Warning: Staged manifest not found during finalization.", cancellationToken);
+        }
     }
 
     private async Task CleanUpPayloadDirectory(string stagingDirectory, CancellationToken cancellationToken = default)

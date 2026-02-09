@@ -81,6 +81,7 @@ public class UpdateManagerTests : IDisposable
     {
         _testEnvironment.SetupValidEnvironment();
         _testEnvironment.CreateStagingFile("NewMod.dll", "New Content");
+        _testEnvironment.CreateStagingFile(Path.Combine(Constants.ModfatherDataDirectory, Constants.ClientManifestFile), "New Content");
 
         _watcherMock.Setup(x => x.WaitForProcessToCloseAsync(It.IsAny<CancellationToken>()))
                     .ReturnsAsync(true);
@@ -91,6 +92,9 @@ public class UpdateManagerTests : IDisposable
 
         Assert.True(File.Exists(Path.Combine(_testEnvironment.BaseDir, "NewMod.dll")));
         Assert.Equal("New Content", await File.ReadAllTextAsync(Path.Combine(_testEnvironment.BaseDir, "NewMod.dll")));
+
+        Assert.True(File.Exists(Path.Combine(_testEnvironment.BaseDir, Constants.ClientManifestFile)));
+        Assert.Equal("New Content", await File.ReadAllTextAsync(Path.Combine(_testEnvironment.BaseDir, Constants.ClientManifestFile)));
 
         Assert.False(File.Exists(Path.Combine(_testEnvironment.StagingDir, "NewMod.dll")));
 
@@ -149,6 +153,75 @@ public class UpdateManagerTests : IDisposable
 
         Assert.True(Directory.Exists(_testEnvironment.StagingDir));
         Assert.Empty(Directory.GetFiles(_testEnvironment.StagingDir));
+    }
+
+    [Fact]
+    public async Task ProcessUpdatesAsyncMovesManifestToTargetAsFinalStep()
+    {
+        _testEnvironment.SetupValidEnvironment();
+
+        string manifestRelativePath = Path.Combine(Constants.ModfatherDataDirectory, Constants.ClientManifestFile);
+        string stagedManifestPath = Path.Combine(_testEnvironment.StagingDir, manifestRelativePath);
+        string targetManifestPath = Path.Combine(_testEnvironment.BaseDir, manifestRelativePath);
+
+        _testEnvironment.CreateStagingFile(manifestRelativePath, "{\"Version\":\"1.0.0\"}");
+
+        _watcherMock.Setup(x => x.WaitForProcessToCloseAsync(It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(true);
+
+        UpdateManager manager = new(_loggerMock.Object, _watcherMock.Object);
+
+        await manager.ProcessUpdatesAsync(_progressMock.Object);
+
+        Assert.True(File.Exists(targetManifestPath), "Das Manifest wurde nicht an den Zielort verschoben.");
+        Assert.False(File.Exists(stagedManifestPath));
+
+        _loggerMock.Verify(x => x.WriteMessageAsync(
+            It.Is<string>(s => s.Contains("Moving manifest to")),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessUpdatesAsyncHandlesMissingStagedManifestGracefully()
+    {
+        _testEnvironment.SetupValidEnvironment();
+        _testEnvironment.CreateStagingFile("OtherMod.dll", "Content");
+
+        _watcherMock.Setup(x => x.WaitForProcessToCloseAsync(It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(true);
+
+        UpdateManager manager = new(_loggerMock.Object, _watcherMock.Object);
+
+        await manager.ProcessUpdatesAsync(_progressMock.Object);
+
+        _loggerMock.Verify(x => x.WriteMessageAsync(
+            It.Is<string>(s => s.Contains("Warning: Staged manifest not found")),
+            It.IsAny<CancellationToken>()), Times.Once);
+
+        Assert.True(File.Exists(Path.Combine(_testEnvironment.BaseDir, "OtherMod.dll")));
+    }
+
+    [Fact]
+    public async Task ProcessUpdatesAsyncSkipsManifestDuringInitialMove()
+    {
+        _testEnvironment.SetupValidEnvironment();
+
+        string manifestRelativePath = Path.Combine(Constants.ModfatherDataDirectory, Constants.ClientManifestFile);
+        string otherFileRelativePath = "Mod.dll";
+
+        _testEnvironment.CreateStagingFile(manifestRelativePath, "manifest");
+        _testEnvironment.CreateStagingFile(otherFileRelativePath, "dll");
+
+        _watcherMock.Setup(x => x.WaitForProcessToCloseAsync(It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(true);
+
+        UpdateManager manager = new(_loggerMock.Object, _watcherMock.Object);
+
+        await manager.ProcessUpdatesAsync(_progressMock.Object);
+
+        _loggerMock.Verify(x => x.WriteMessageAsync(
+            It.Is<string>(s => s.Contains("Skipping manifest file for final move")),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private sealed class TestEnvironment : IDisposable
