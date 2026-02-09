@@ -6,6 +6,8 @@
   </Folder>
 
   <Folder Name="/Tests/">
+    <Project Path="Tests/Client.Tests/SwiftXP.SPT.TheModfather.Client.Tests.csproj" />
+    <Project Path="Tests/Server.Tests/SwiftXP.SPT.TheModfather.Server.Tests.csproj" />
     <Project Path="Tests/Updater.Tests/SwiftXP.SPT.TheModfather.Updater.Tests.csproj" />
   </Folder>
 </Solution>

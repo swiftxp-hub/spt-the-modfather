@@ -4,19 +4,19 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using SPT.Common.Http;
 using SwiftXP.SPT.Common.Extensions.FileSystem;
+using SwiftXP.SPT.Common.Http;
 using SwiftXP.SPT.Common.IO.Hashing;
 using SwiftXP.SPT.Common.Loggers;
 using SwiftXP.SPT.TheModfather.Client.Contexts;
 using SwiftXP.SPT.TheModfather.Client.Data;
 using SwiftXP.SPT.TheModfather.Client.Enums;
-using SwiftXP.SPT.TheModfather.Server.Data;
 
 namespace SwiftXP.SPT.TheModfather.Client.Services;
 
 public class UpdateManager(ISimpleSptLogger simpleSptLogger,
-    IXxHash128FileHasher xxHash128FileHasher) : IUpdateManager
+    IXxHash128FileHasher xxHash128FileHasher,
+    ISPTRequestHandler sptRequestHandler) : IUpdateManager
 {
     public async Task<SyncProposal> GetSyncActionsAsync(
         ClientState clientState,
@@ -33,7 +33,7 @@ public class UpdateManager(ISimpleSptLogger simpleSptLogger,
         FileHashBlacklist blacklist = clientState.FileHashBlacklist;
 
         ClientManifest clientManifest = clientState.ClientManifest
-                             ?? new ClientManifest(DateTimeOffset.UtcNow, RequestHandler.Host);
+                             ?? new ClientManifest(DateTimeOffset.UtcNow, sptRequestHandler.Host);
 
         Report(progressCallback, 0.3f, "Processing server-manifest...");
         HashSet<string> processedServerPaths = [];

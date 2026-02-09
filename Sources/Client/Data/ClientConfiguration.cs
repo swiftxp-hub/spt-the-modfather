@@ -2,7 +2,7 @@ using System;
 using SwiftXP.SPT.Common.Extensions.FileSystem;
 using SwiftXP.SPT.Common.Runtime;
 
-namespace SwiftXP.SPT.TheModfather.Server.Data;
+namespace SwiftXP.SPT.TheModfather.Client.Data;
 
 public record class ClientConfiguration
 {

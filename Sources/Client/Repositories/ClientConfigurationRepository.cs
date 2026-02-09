@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using SwiftXP.SPT.Common.Environment;
 using SwiftXP.SPT.Common.NETStd.Json;
 using SwiftXP.SPT.Common.Loggers;
-using SwiftXP.SPT.TheModfather.Server.Data;
+using SwiftXP.SPT.TheModfather.Client.Data;
 
 namespace SwiftXP.SPT.TheModfather.Client.Repositories;
 

@@ -12,12 +12,12 @@ using SwiftXP.SPT.TheModfather.Client.Contexts;
 using SwiftXP.SPT.TheModfather.Client.Data;
 using SwiftXP.SPT.TheModfather.Client.Enums;
 using SwiftXP.SPT.TheModfather.Client.Repositories;
-using SwiftXP.SPT.TheModfather.Server.Data;
 
 namespace SwiftXP.SPT.TheModfather.Client.Services;
 
 public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
-    ClientManifestRepository clientManifestRepository) : ISyncActionManager
+    IClientManifestRepository clientManifestRepository,
+    ISPTRequestHandler sptRequestHandler) : ISyncActionManager
 {
     public async Task ProcessSyncActionsAsync(
         ClientState clientState,
@@ -38,7 +38,8 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
         ClientManifest newManifest = BuildNewClientManifest(
             clientState.ServerManifest,
             syncProposal,
-            clientState.ClientConfiguration);
+            clientState.ClientConfiguration,
+            sptRequestHandler.Host);
 
         await clientManifestRepository.SaveToStagingAsync(newManifest, cancellationToken);
     }
@@ -82,10 +83,10 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
     private async Task DownloadFileWithTimeoutAsync(string stagingDir, string relativePath, float progress,
         IProgress<(float progress, string message)>? progressReporter, CancellationToken cancellationToken)
     {
-        TimeSpan originalTimeout = RequestHandler.HttpClient.HttpClient.Timeout;
+        TimeSpan originalTimeout = sptRequestHandler.HttpClient.HttpClient.Timeout;
         try
         {
-            RequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
+            sptRequestHandler.HttpClient.HttpClient.Timeout = TimeSpan.FromMinutes(15);
 
             string url = $"{Constants.RoutePrefix}{Constants.RouteGetFile}/{Uri.EscapeDataString(relativePath)}";
             string destPath = Path.Combine(stagingDir, relativePath);
@@ -93,7 +94,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
             ValidatePathSecurity(stagingDir, destPath);
             EnsureDirectoryExists(destPath);
 
-            await RequestHandler.HttpClient.DownloadWithCancellationAsync(url, destPath, (downloadProgress) =>
+            await sptRequestHandler.HttpClient.DownloadWithCancellationAsync(url, destPath, (downloadProgress) =>
             {
                 string downloadText = $"Download Speed: {downloadProgress.DownloadSpeed} | Progress: {downloadProgress.FileSizeInfo}";
                 progressReporter?.Report((progress, downloadText));
@@ -107,7 +108,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
         }
         finally
         {
-            RequestHandler.HttpClient.HttpClient.Timeout = originalTimeout;
+            sptRequestHandler.HttpClient.HttpClient.Timeout = originalTimeout;
         }
     }
 
@@ -122,9 +123,10 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
     private static ClientManifest BuildNewClientManifest(
         ServerManifest serverManifest,
         SyncProposal syncProposal,
-        ClientConfiguration clientConfiguration)
+        ClientConfiguration clientConfiguration,
+        string serverUrl)
     {
-        ClientManifest newManifest = new(DateTimeOffset.UtcNow, RequestHandler.Host);
+        ClientManifest newManifest = new(DateTimeOffset.UtcNow, serverUrl);
 
         Dictionary<string, SyncAction> acceptedMap = syncProposal.SyncActions.Where(a => a.IsSelected).ToDictionary(a => a.RelativeFilePath);
         Dictionary<string, SyncAction> rejectedMap = syncProposal.SyncActions.Where(a => !a.IsSelected).ToDictionary(a => a.RelativeFilePath);

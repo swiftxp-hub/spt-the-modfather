@@ -33,9 +33,7 @@ public record class ServerConfiguration
         set => _excludePatterns = NormalizePaths(value);
     }
 
-    public string[] FileHashBlacklist { get; set; } = [
-        "919ca65d49641a2e09fb9e373b74d0a0"
-    ];
+    public string[] FileHashBlacklist { get; set; } = [];
 
     private static string[] NormalizePaths(string[]? paths)
     {

@@ -51,6 +51,12 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>SwiftXP.SPT.TheModfather.Server.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <Target Name="GenerateLicenseFile" AfterTargets="Publish">
     <Message Text="Generating license file..." Importance="high" />
 

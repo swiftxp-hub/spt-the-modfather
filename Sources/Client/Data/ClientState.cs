@@ -1,5 +1,4 @@
 using SwiftXP.SPT.TheModfather.Client.Data;
-using SwiftXP.SPT.TheModfather.Server.Data;
 
 namespace SwiftXP.SPT.TheModfather.Client.Contexts;
 

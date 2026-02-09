@@ -11,7 +11,6 @@ using SwiftXP.SPT.TheModfather.Client.Patches;
 using SwiftXP.SPT.TheModfather.Client.Repositories;
 using SwiftXP.SPT.TheModfather.Client.Services;
 using SwiftXP.SPT.TheModfather.Client.UI;
-using SwiftXP.SPT.TheModfather.Server.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,6 +19,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using SwiftXP.SPT.Common.Http;
 
 namespace SwiftXP.SPT.TheModfather.Client;
 
@@ -99,8 +99,12 @@ public class Plugin : BaseUnityPlugin
 
             BaseDirectoryLocator baseDirLocator = new();
             JsonFileSerializer jsonSerializer = new();
-            ServerManifestRepository serverManifestRepo = new();
-            FileHashBlacklistRepository blacklistRepo = new();
+
+            SPTHttpClient sptHttpClient = new();
+            SPTRequestHandler sptRequestHandler = new(sptHttpClient);
+
+            FileHashBlacklistRepository blacklistRepo = new(sptRequestHandler);
+            ServerManifestRepository serverManifestRepo = new(sptRequestHandler);
 
             _configRepo = new(_logger, baseDirLocator, jsonSerializer);
             _manifestRepo = new(_logger, baseDirLocator, jsonSerializer);
@@ -113,8 +117,8 @@ public class Plugin : BaseUnityPlugin
                 await blacklistRepo.LoadAsync(cancellationToken)
             );
 
-            _updateManager = new UpdateManager(_logger, new XxHash128FileHasher());
-            _syncActionManager = new SyncActionManager(_logger, _manifestRepo);
+            _updateManager = new UpdateManager(_logger, new XxHash128FileHasher(), sptRequestHandler);
+            _syncActionManager = new SyncActionManager(_logger, _manifestRepo, sptRequestHandler);
         }
         catch (Exception ex)
         {
