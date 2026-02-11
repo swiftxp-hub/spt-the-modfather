@@ -155,7 +155,7 @@ public class UpdateManager(ISimpleLogger simpleLogger,
             await simpleLogger.WriteMessageAsync($"Moved {counter} files", cancellationToken);
     }
 
-    private async Task FinalizeManifestAsync(string baseDirectory, string stagingDirectory, CancellationToken cancellationToken)
+    private async Task FinalizeManifestAsync(string baseDirectory, string stagingDirectory, CancellationToken cancellationToken = default)
     {
         string manifestRelativePath = Path.Combine(Constants.ModfatherDataDirectory, Constants.ClientManifestFile);
         string sourcePath = Path.Combine(stagingDirectory, manifestRelativePath);

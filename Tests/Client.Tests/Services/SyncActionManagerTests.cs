@@ -93,11 +93,11 @@ public class SyncActionManagerTests : IDisposable
         ClientState state = CreateState();
         SyncAction action = new("file.dll", SyncActionType.Add, null, null) { IsSelected = true };
         SyncProposal proposal = CreateProposal([action]);
-        Mock<IProgress<(float progress, string message)>> progressMock = new();
+        Mock<IProgress<(float progress, string message, string detail)>> progressMock = new();
 
         await _manager.ProcessSyncActionsAsync(state, proposal, progressMock.Object);
 
-        progressMock.Verify(x => x.Report(It.IsAny<(float, string)>()), Times.AtLeastOnce);
+        progressMock.Verify(x => x.Report(It.IsAny<(float, string, string)>()), Times.AtLeastOnce);
     }
 
     [Fact]

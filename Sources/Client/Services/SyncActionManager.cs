@@ -22,7 +22,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
     public async Task ProcessSyncActionsAsync(
         ClientState clientState,
         SyncProposal syncProposal,
-        IProgress<(float progress, string message)>? progressCallback = null,
+        IProgress<(float progress, string message, string detail)>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
         string stagingDirectory = GetAndValidateStagingDirectory(clientState.BaseDirectory);
@@ -47,14 +47,14 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
     private async Task ExecuteSyncOperationsAsync(
         IReadOnlyList<SyncAction> syncActions,
         string stagingDirectory,
-        IProgress<(float progress, string message)>? progressReporter,
+        IProgress<(float progress, string message, string detail)>? progressReporter,
         CancellationToken cancellationToken)
     {
         List<SyncAction> selectedActions = [.. syncActions.Where(x => x.IsSelected)];
         float total = selectedActions.Count + 1;
         float current = 1;
 
-        progressReporter?.Report((current / total, "Starting synchronization..."));
+        progressReporter?.Report((current / total, "Starting synchronization...", string.Empty));
 
         foreach (SyncAction syncAction in selectedActions)
         {
@@ -65,14 +65,14 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
             {
                 case SyncActionType.Add:
                 case SyncActionType.Update:
-                    progressReporter?.Report((current / total, $"Downloading {syncAction.RelativeFilePath}..."));
+                    progressReporter?.Report((current / total, $"Downloading {syncAction.RelativeFilePath}...", string.Empty));
                     await DownloadFileWithTimeoutAsync(stagingDirectory, syncAction.RelativeFilePath, current / total, progressReporter, cancellationToken);
 
                     break;
 
                 case SyncActionType.Delete:
                 case SyncActionType.Blacklist:
-                    progressReporter?.Report((current / total, $"Staging removal for {syncAction.RelativeFilePath}..."));
+                    progressReporter?.Report((current / total, $"Staging removal for {syncAction.RelativeFilePath}...", string.Empty));
                     await CreateDeleteInstruction(stagingDirectory, syncAction.RelativeFilePath, cancellationToken);
 
                     break;
@@ -81,7 +81,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
     }
 
     private async Task DownloadFileWithTimeoutAsync(string stagingDir, string relativePath, float progress,
-        IProgress<(float progress, string message)>? progressReporter, CancellationToken cancellationToken)
+        IProgress<(float progress, string message, string detail)>? progressReporter, CancellationToken cancellationToken)
     {
         TimeSpan originalTimeout = sptRequestHandler.HttpClient.HttpClient.Timeout;
         try
@@ -97,7 +97,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
             await sptRequestHandler.HttpClient.DownloadWithCancellationAsync(url, destPath, (downloadProgress) =>
             {
                 string downloadText = $"Download Speed: {downloadProgress.DownloadSpeed} | Progress: {downloadProgress.FileSizeInfo}";
-                progressReporter?.Report((progress, downloadText));
+                progressReporter?.Report((progress, $"Downloading {relativePath}...", downloadText));
             }, cancellationToken);
         }
         catch (Exception ex)

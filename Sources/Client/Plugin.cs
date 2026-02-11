@@ -49,7 +49,7 @@ public class Plugin : BaseUnityPlugin
         _cancellationTokenSource = new CancellationTokenSource();
 
         _currentState = PluginState.Initializing;
-        UpdateUiStatus("Initializing Modfather...", 0f);
+        UpdateUiStatus("Initializing Modfather...");
 
         GameStartPatch.Initialize(Logger);
 
@@ -134,9 +134,9 @@ public class Plugin : BaseUnityPlugin
 
         try
         {
-            UpdateUiStatus("Consulting the families...", 0);
+            UpdateUiStatus("Consulting the families...");
 
-            Progress<(float val, string msg)> progressReporter = new(p => UpdateUiStatus(p.msg, p.val));
+            Progress<(float progress, string message)> progressReporter = new(p => UpdateUiStatus("Consulting the families...", p.message, progress: p.progress));
 
             _syncProposal = await _updateManager!.GetSyncActionsAsync(_clientState!, progressReporter, token);
 
@@ -170,31 +170,6 @@ public class Plugin : BaseUnityPlugin
         }
     }
 
-    private void UpdateUiStatus(string statusText, float? progress = null, string? detail = null)
-    {
-        _uiState.StatusText = statusText;
-
-        if (progress.HasValue)
-            _uiState.Progress = progress.Value;
-
-        if (detail != null)
-            _uiState.ProgressDetail = detail;
-    }
-
-    private void HandleError(string message)
-    {
-        _currentState = PluginState.Error;
-        _uiState.IsError = true;
-        _uiState.StatusText = message;
-    }
-
-    private void ResumeGameLoading()
-    {
-        _currentState = PluginState.ReadyToGame;
-
-        GameStartPatch.ResumeGame();
-    }
-
     private async Task InstallUpdatesAsync()
     {
         _currentState = PluginState.Updating;
@@ -215,7 +190,7 @@ public class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Progress<(float progress, string message)> progressReporter = new(p => UpdateUiStatus("Settling all family business...", p.progress, p.message));
+            Progress<(float progress, string message, string detail)> progressReporter = new(p => UpdateUiStatus("Settling all family business...", p.message, p.detail, progress: p.progress));
 
             await _syncActionManager!.ProcessSyncActionsAsync(
                 _clientState!,
@@ -225,7 +200,7 @@ public class Plugin : BaseUnityPlugin
 
             _currentState = PluginState.UpdateComplete;
 
-            UpdateUiStatus("Welcome to the family.", 1f, "Closing Escape From Tarkov... the update will be finished by an external process.");
+            UpdateUiStatus("Welcome to the family.", "Closing Escape From Tarkov... the update will be finished by an external process.", progress: 1f);
 
             await Task.Delay(2000);
 
@@ -295,7 +270,8 @@ public class Plugin : BaseUnityPlugin
             Arguments = string.Join(" ", args),
             WorkingDirectory = _clientState!.BaseDirectory,
             UseShellExecute = true,
-            CreateNoWindow = false
+            CreateNoWindow = false,
+            WindowStyle = ProcessWindowStyle.Normal
         };
 
         try
@@ -307,5 +283,27 @@ public class Plugin : BaseUnityPlugin
         {
             _logger!.LogException(ex);
         }
+    }
+
+    private void UpdateUiStatus(string statusText, string progressHeader = "", string progressDetail = "", float progress = 0f)
+    {
+        _uiState.StatusText = statusText;
+        _uiState.ProgressHeader = progressHeader;
+        _uiState.ProgressDetail = progressDetail;
+        _uiState.Progress = progress;
+    }
+
+    private void HandleError(string message)
+    {
+        _currentState = PluginState.Error;
+        _uiState.IsError = true;
+        _uiState.StatusText = message;
+    }
+
+    private void ResumeGameLoading()
+    {
+        _currentState = PluginState.ReadyToGame;
+
+        GameStartPatch.ResumeGame();
     }
 }

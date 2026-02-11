@@ -9,5 +9,5 @@ namespace SwiftXP.SPT.TheModfather.Client.Services;
 public interface ISyncActionManager
 {
     Task ProcessSyncActionsAsync(ClientState clientState, SyncProposal syncProposal,
-        IProgress<(float progress, string message)>? progressCallback = null, CancellationToken cancellationToken = default);
+        IProgress<(float progress, string message, string detail)>? progressCallback = null, CancellationToken cancellationToken = default);
 }
