@@ -297,7 +297,8 @@ public class Plugin : BaseUnityPlugin
     {
         _currentState = PluginState.Error;
         _uiState.IsError = true;
-        _uiState.StatusText = message;
+        _uiState.StatusText = "Look how they massacred my update.";
+        _uiState.ProgressHeader = message;
     }
 
     private void ResumeGameLoading()

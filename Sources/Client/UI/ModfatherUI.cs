@@ -85,6 +85,9 @@ public static class ModfatherUI
         Rect barRect = GetProgressBarRect(winRect);
         DrawProgressBar(barRect, state.Progress, state.ProgressDetail, new Color(0.7f, 0.0f, 0.0f, 1f));
 
+        if (!string.IsNullOrEmpty(state.ProgressHeader))
+            DrawProgressHeader(barRect, state.ProgressHeader);
+
         Rect btnRect = GetCenteredButtonRect(winRect);
         if (DrawButton(btnRect, "IGNORE & START GAME", false))
             onErrorContinue?.Invoke();
@@ -138,13 +141,13 @@ public static class ModfatherUI
 
     private static void DrawProgressHeader(Rect barRect, string text)
     {
-        Rect headerRect = new(barRect.x, barRect.y - 25f, barRect.width, 22f);
+        Rect headerRect = new(barRect.x, barRect.y - 35f, barRect.width, 22f);
 
         GUIStyle headerStyle = new(GUI.skin.label)
         {
             alignment = TextAnchor.LowerCenter,
             fontSize = 14,
-            fontStyle = FontStyle.Bold,
+            fontStyle = FontStyle.Normal,
             normal = { textColor = ModfatherUIColors.TextWhite }
         };
 
@@ -162,7 +165,7 @@ public static class ModfatherUI
 
         if (!string.IsNullOrEmpty(text))
         {
-            GUIStyle textStyle = new(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold, fontSize = 16, normal = { textColor = Color.white } };
+            GUIStyle textStyle = new(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Italic, fontSize = 14, normal = { textColor = Color.white } };
             GUIStyle shadowStyle = new(textStyle); shadowStyle.normal.textColor = new Color(0, 0, 0, 0.7f);
 
             GUI.Label(new Rect(rect.x + 1, rect.y + 1, rect.width, rect.height), text, shadowStyle);

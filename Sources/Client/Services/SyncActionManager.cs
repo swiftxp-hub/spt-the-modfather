@@ -65,7 +65,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
             {
                 case SyncActionType.Add:
                 case SyncActionType.Update:
-                    progressReporter?.Report((current / total, $"Downloading {syncAction.RelativeFilePath}...", string.Empty));
+                    progressReporter?.Report((current / total, $"Downloading: {syncAction.RelativeFilePath}...", string.Empty));
                     await DownloadFileWithTimeoutAsync(stagingDirectory, syncAction.RelativeFilePath, current / total, progressReporter, cancellationToken);
 
                     break;
@@ -97,7 +97,7 @@ public class SyncActionManager(ISimpleSptLogger simpleSptLogger,
             await sptRequestHandler.HttpClient.DownloadWithCancellationAsync(url, destPath, (downloadProgress) =>
             {
                 string downloadText = $"Download Speed: {downloadProgress.DownloadSpeed} | Progress: {downloadProgress.FileSizeInfo}";
-                progressReporter?.Report((progress, $"Downloading {relativePath}...", downloadText));
+                progressReporter?.Report((progress, $"Downloading: {relativePath}...", downloadText));
             }, cancellationToken);
         }
         catch (Exception ex)
