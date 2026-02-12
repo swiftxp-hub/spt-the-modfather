@@ -7,6 +7,15 @@ This MOD facilitates the synchronization of client-Mods (and, if you feel advent
 
 **Just to clarify: This mod synchronizes mods from your SPT server to the client(s), but does NOT download updates from the SPT Forge.**
 
+#### Explanations of the "Actions" in the update screen
+
+- **Add** - This file does not exist on your client and will be downloaded from the server.
+- **Update** - This file exists on your client, but an update is available on the server that will be downloaded.
+- **Delete** - This file was deleted on the server and will be deleted from your client.
+- **Adopt** - This file exists on both your client and the server and does not need to be updated, but your client will add it to its 'memory'.
+- **Untrack** - This file was tracked by the sync process, but you added it to the exclude patterns, so it will be ignored in the current and future syncs.
+- **Blacklist** - This file exists on your client but was blacklisted by the server admin. It will be deleted.
+
 #### Requirements
 
 Practically none. If you can run SPT, you can run this.
