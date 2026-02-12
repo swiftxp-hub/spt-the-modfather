@@ -21,6 +21,8 @@ public static class Program
     {
         SubscribeToCancelKeyPress();
 
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+
         SimpleLogger simpleLogger = new(AppContext.BaseDirectory);
         CommandLineArgsReader commandLineArgsReader = new();
         ProcessService processService = new();
