@@ -253,7 +253,6 @@ public class Plugin : BaseUnityPlugin
         if (!File.Exists(updaterPath))
         {
             _logger!.LogError($"Updater executable not found at: {updaterPath}");
-
             HandleError("Updater executable not found.");
 
             return;
@@ -266,13 +265,26 @@ public class Plugin : BaseUnityPlugin
 
         ProcessStartInfo startInfo = new()
         {
-            FileName = updaterPath,
-            Arguments = string.Join(" ", args),
             WorkingDirectory = _clientState!.BaseDirectory,
             UseShellExecute = true,
             CreateNoWindow = false,
             WindowStyle = ProcessWindowStyle.Normal
         };
+
+        bool isWine = Environment.GetEnvironmentVariable("WINEUSERNAME") != null;
+
+        if (isWine)
+        {
+            string argsString = string.Join(" ", args);
+
+            startInfo.FileName = "cmd.exe";
+            startInfo.Arguments = $"/c start \"The Modfather Updater\" \"{Constants.UpdaterExecutable}\" {argsString}";
+        }
+        else
+        {
+            startInfo.FileName = updaterPath;
+            startInfo.Arguments = string.Join(" ", args);
+        }
 
         try
         {
