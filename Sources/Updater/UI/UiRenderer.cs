@@ -5,9 +5,9 @@ namespace SwiftXP.SPT.TheModfather.Updater.UI;
 
 public static class UiRenderer
 {
-    public static IRenderable CreateCenteredPanel(string statusText, int percentage, string headerText)
+    public static IRenderable CreateCenteredPanel(string headerText, string statusText, int percentage)
     {
-        bool isWine = Environment.GetEnvironmentVariable("WINEUSERNAME") != null;
+        bool isWine = System.Environment.GetEnvironmentVariable("WINEUSERNAME") != null;
 
         char fillChar = isWine ? '#' : '█';
         char emptyChar = isWine ? '-' : '░';
@@ -29,7 +29,7 @@ public static class UiRenderer
 
         Panel panel = new Panel(content)
                 .Header(headerText)
-                .Border(BoxBorder.Rounded)
+                .Border(!isWine ? BoxBorder.Rounded : BoxBorder.Ascii)
                 .BorderColor(Color.Blue)
                 .Padding(2, 1);
 

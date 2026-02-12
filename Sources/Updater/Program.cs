@@ -75,7 +75,7 @@ public static class Program
 
     private static async Task StartUiUpdate(UpdateManager updateManager)
     {
-        IRenderable layout = UiRenderer.CreateCenteredPanel("Initialising...", 0, HeaderText);
+        IRenderable layout = UiRenderer.CreateCenteredPanel(HeaderText, "Initialising...", 0);
 
         await AnsiConsole.Live(layout)
             .AutoClear(false)
@@ -86,15 +86,15 @@ public static class Program
                 Progress<int> progress = new(percentage =>
                 {
                     IRenderable newLayout = UiRenderer.CreateCenteredPanel(
+                        HeaderText,
                         $"Processing updates... ({percentage}%)",
-                        percentage,
-                        HeaderText);
+                        percentage);
                     ctx.UpdateTarget(newLayout);
                 });
 
                 await updateManager.ProcessUpdatesAsync(progress, s_cancellationTokenSource.Token);
 
-                ctx.UpdateTarget(UiRenderer.CreateCenteredPanel("[green]Update completed! Closing...[/]", 100, HeaderText));
+                ctx.UpdateTarget(UiRenderer.CreateCenteredPanel(HeaderText, "[green]Update completed! Closing...[/]", 100));
 
                 await Task.Delay(1500, s_cancellationTokenSource.Token);
             });
