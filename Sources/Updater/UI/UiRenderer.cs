@@ -7,10 +7,10 @@ public static class UiRenderer
 {
     public static IRenderable CreateCenteredPanel(string headerText, string statusText, int percentage)
     {
-        bool isWine = System.Environment.GetEnvironmentVariable("WINEUSERNAME") != null;
+        bool supportsUnicode = AnsiConsole.Profile.Capabilities.Unicode;
 
-        char fillChar = isWine ? '#' : '█';
-        char emptyChar = isWine ? '-' : '░';
+        char fillChar = supportsUnicode ? '█' : '#';
+        char emptyChar = supportsUnicode ? '░' : '-';
 
         const int width = 30;
         int filled = (int)(percentage / 100.0 * width);
@@ -27,9 +27,11 @@ public static class UiRenderer
                 .AddRow(progressBar)
                 .AddRow($"[grey]{percentage}%[/]");
 
+        BoxBorder border = supportsUnicode ? BoxBorder.Rounded : BoxBorder.Ascii;
+
         Panel panel = new Panel(content)
                 .Header(headerText)
-                .Border(!isWine ? BoxBorder.Rounded : BoxBorder.Ascii)
+                .Border(border)
                 .BorderColor(Color.Blue)
                 .Padding(2, 1);
 

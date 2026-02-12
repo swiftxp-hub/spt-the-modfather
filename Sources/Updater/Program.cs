@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Spectre.Console;
@@ -19,9 +20,23 @@ public static class Program
 
     static async Task Main(string[] args)
     {
-        SubscribeToCancelKeyPress();
+
+        bool isWine = System.Environment.GetEnvironmentVariable("WINEUSERNAME") != null
+               || System.Environment.GetEnvironmentVariable("WINELOADER") != null
+               || System.Environment.GetEnvironmentVariable("WINEPREFIX") != null;
+
+        if (args.Any(a => a.Equals("--ascii", StringComparison.OrdinalIgnoreCase)))
+            isWine = true;
 
         Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+        if (isWine)
+        {
+            AnsiConsole.Profile.Capabilities.Unicode = false;
+            AnsiConsole.Profile.Capabilities.Ansi = true;
+        }
+
+        SubscribeToCancelKeyPress();
 
         SimpleLogger simpleLogger = new(AppContext.BaseDirectory);
         CommandLineArgsReader commandLineArgsReader = new();
