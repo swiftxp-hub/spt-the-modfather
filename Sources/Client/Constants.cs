@@ -16,7 +16,7 @@ public static class Constants
 
     public const string StagingDirectory = "Staging";
 
-    public const string ClientConfigurationFile = "clientConfiguration.json";
+    public const string ClientConfigurationFile = "clientConfig.json";
 
     public const string ClientManifestFile = "clientManifest.json";
 
