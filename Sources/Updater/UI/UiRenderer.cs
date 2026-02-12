@@ -7,13 +7,18 @@ public static class UiRenderer
 {
     public static IRenderable CreateCenteredPanel(string statusText, int percentage, string headerText)
     {
+        bool isWine = Environment.GetEnvironmentVariable("WINEUSERNAME") != null;
+
+        char fillChar = isWine ? '#' : '█';
+        char emptyChar = isWine ? '-' : '░';
+
         const int width = 30;
-        int filled = (int)((percentage / 100.0) * width);
+        int filled = (int)(percentage / 100.0 * width);
         int empty = width - filled;
 
         string progressBar =
-            $"[green]{new string('█', filled)}[/]" +
-            $"[grey]{new string('░', empty)}[/]";
+            $"[green]{new string(fillChar, filled)}[/]" +
+            $"[grey]{new string(emptyChar, empty)}[/]";
 
         Grid content = new Grid()
                 .AddColumn(new GridColumn().NoWrap().Centered())
