@@ -22,8 +22,9 @@ public record class ServerConfiguration
 
     private string[] _excludePatterns = [
         "**/*.log",
-        "BepInEx/plugins/SAIN/**/*.json",
         "BepInEx/patchers/spt-prepatch.dll",
+        "BepInEx/plugins/Fika/Fika.Headless.dll",
+        "BepInEx/plugins/SAIN/**/*.json",
         "BepInEx/plugins/spt/**/*"
     ];
 
