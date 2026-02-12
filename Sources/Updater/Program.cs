@@ -20,10 +20,9 @@ public static class Program
 
     static async Task Main(string[] args)
     {
-
         bool isWine = System.Environment.GetEnvironmentVariable("WINEUSERNAME") != null
-               || System.Environment.GetEnvironmentVariable("WINELOADER") != null
-               || System.Environment.GetEnvironmentVariable("WINEPREFIX") != null;
+                   || System.Environment.GetEnvironmentVariable("WINELOADER") != null
+                   || System.Environment.GetEnvironmentVariable("WINEPREFIX") != null;
 
         if (args.Any(a => a.Equals("--ascii", StringComparison.OrdinalIgnoreCase)))
             isWine = true;
@@ -33,7 +32,8 @@ public static class Program
         if (isWine)
         {
             AnsiConsole.Profile.Capabilities.Unicode = false;
-            AnsiConsole.Profile.Capabilities.Ansi = true;
+            AnsiConsole.Profile.Capabilities.Ansi = false;
+            AnsiConsole.Profile.Capabilities.ColorSystem = ColorSystem.NoColors;
         }
 
         SubscribeToCancelKeyPress();
